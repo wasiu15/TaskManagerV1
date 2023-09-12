@@ -9,9 +9,9 @@ namespace TaskManager.Application.Repository.Interfaces
 {
     public interface ITaskRepository
     {
-        void AddTask(UserTask task);
+        void CreateTask(UserTask task);
         void UpdateTask(UserTask task);
         void DeleteTask(UserTask task);
-        Task<UserTask> GetTask(UserTask task);
+        Task<IEnumerable<UserTask>> GetTasks();
     }
 }

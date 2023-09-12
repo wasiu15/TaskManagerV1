@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Domain.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +16,13 @@ namespace TaskManager.Infrastructure.Services
         public TaskService(IRepositoryManager repositoryManager)
         {
             _repository = repositoryManager;
+        }
+
+        public async Task<IEnumerable<UserTask>> GetTasksAsync()
+        {
+            var getTasks = await _repository.TaskRepository.GetTasks();
+            return getTasks;
+
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Domain.Models;
 using Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,24 +17,11 @@ namespace TaskManager.Infrastructure.Repositories
 
         }
 
-        public void AddTask(UserTask task)
-        {
-            throw new NotImplementedException();
-        }
+        public void CreateTask(UserTask task) => Create(task);
+        public void UpdateTask(UserTask task) => Update(task);
+        public void DeleteTask(UserTask task) => Delete(task);
 
-        public void DeleteTask(UserTask task)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<UserTask> GetTask(UserTask task)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void UpdateTask(UserTask task)
-        {
-            throw new NotImplementedException();
-        }
+        public async Task<IEnumerable<UserTask>> GetTasks() => await FindAll(false).ToListAsync();
+        
     }
 }
