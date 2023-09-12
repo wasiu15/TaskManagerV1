@@ -8,12 +8,9 @@ namespace Presentation.ContextFactory
     {
         public RepositoryContext CreateDbContext(string[] args)
         {
-            var configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json")
-            .Build();
+            var configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json").Build();
             var builder = new DbContextOptionsBuilder<RepositoryContext>()
-            .UseSqlite(configuration.GetConnectionString("sqlConnection"));
+                .UseSqlite(configuration.GetConnectionString("sqlConnection"), b => b.MigrationsAssembly("Presentation"));
             return new RepositoryContext(builder.Options);
         }
 

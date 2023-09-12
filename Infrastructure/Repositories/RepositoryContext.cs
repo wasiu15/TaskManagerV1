@@ -1,9 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Domain.Models;
+using Infrastructure.Repositories.Configuration;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories
 {
@@ -12,7 +9,11 @@ namespace Infrastructure.Repositories
         public RepositoryContext(DbContextOptions options): base(options)
         {
         }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.ApplyConfiguration(new TaskConfiguration());
+        }
 
-        public DbSet<Task>? Tasks { get; set; }
+        public DbSet<UserTask>? Tasks { get; set; }
     }
 }
