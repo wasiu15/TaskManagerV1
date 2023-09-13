@@ -21,6 +21,6 @@ namespace TaskManager.Infrastructure.Repositories
 
         public ITaskRepository TaskRepository => _taskRepository.Value;
 
-        public void Save() => _repositoryContext.SaveChanges();
+        public async Task SaveAsync() => _repositoryContext.SaveChanges();
     }
 }

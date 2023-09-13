@@ -8,11 +8,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Presentation.Migrations
+namespace TaskManager.Presentation.Migrations
 {
     [DbContext(typeof(RepositoryContext))]
-    [Migration("20230912022859_InitialData")]
-    partial class InitialData
+    [Migration("20230912221143_initialdb")]
+    partial class initialdb
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -30,7 +30,7 @@ namespace Presentation.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("DueDate")
+                    b.Property<DateOnly>("DueDate")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Priority")
@@ -50,20 +50,20 @@ namespace Presentation.Migrations
                     b.HasData(
                         new
                         {
-                            TaskId = new Guid("77966e75-603a-43fd-91c6-009dc3e75690"),
+                            TaskId = new Guid("b9bee19b-c112-4f93-95ad-47b5de317292"),
                             Description = "Gym workout",
-                            DueDate = new DateTime(2023, 9, 12, 3, 28, 59, 210, DateTimeKind.Local).AddTicks(7181),
-                            Priority = 0,
-                            Status = 0,
+                            DueDate = new DateOnly(2023, 11, 10),
+                            Priority = 2,
+                            Status = 1,
                             Title = "Fitness Goals"
                         },
                         new
                         {
-                            TaskId = new Guid("500a9ee9-f96b-49c6-8d07-27b2e0866ba1"),
+                            TaskId = new Guid("35f77619-97c7-48d5-a420-239677d88289"),
                             Description = "Research industry trends",
-                            DueDate = new DateTime(2023, 9, 12, 3, 28, 59, 210, DateTimeKind.Local).AddTicks(7194),
-                            Priority = 1,
-                            Status = 1,
+                            DueDate = new DateOnly(2023, 10, 12),
+                            Priority = 2,
+                            Status = 2,
                             Title = "Work Project Task"
                         });
                 });

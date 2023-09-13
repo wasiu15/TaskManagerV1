@@ -10,7 +10,7 @@ namespace Presentation.ContextFactory
         {
             var configuration = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile("appsettings.json").Build();
             var builder = new DbContextOptionsBuilder<RepositoryContext>()
-                .UseSqlite(configuration.GetConnectionString("sqlConnection"), b => b.MigrationsAssembly("Presentation"));
+                .UseSqlite(configuration.GetConnectionString("sqlConnection"), b => b.MigrationsAssembly("TaskManager.Presentation"));
             return new RepositoryContext(builder.Options);
         }
 
