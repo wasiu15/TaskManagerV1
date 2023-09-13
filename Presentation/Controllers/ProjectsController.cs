@@ -22,6 +22,13 @@ namespace TaskManager.Presentation.Controllers
             return Ok(response);
         }
 
+        [HttpGet("getProjectById")]
+        public async Task<ActionResult> GetProjectById([FromQuery] string projectId)
+        {
+            var response = await _serviceManager.TaskService.GetTaskByTaskId(projectId);
+            return Ok(response);
+        }
+
         [HttpPost("addProject")]
         public async Task<ActionResult> AddProject(CreateProjectRequest project)
         {
@@ -36,10 +43,17 @@ namespace TaskManager.Presentation.Controllers
             return Ok(response);
         }
 
-        [HttpPatch("assignTask")]
-        public async Task<ActionResult> AssignTask([FromQuery] string projectId,[FromBody] AssignTaskRequest request)
+        [HttpPatch("assignProject")]
+        public async Task<ActionResult> AssignProject([FromQuery] string projectId,[FromBody] AssignTaskRequest request)
         {
             var response = await _serviceManager.ProjectService.AssignTask(projectId, request.TaskId);
+            return Ok(response);
+        }
+
+        [HttpDelete("DeleteProject")]
+        public async Task<ActionResult> DeleteProject([FromQuery] string projectId)
+        {
+            var response = await _serviceManager.ProjectService.DeleteProject(projectId);
             return Ok(response);
         }
     }

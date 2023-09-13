@@ -220,7 +220,7 @@ namespace TaskManager.Infrastructure.Services
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
-                        ResponseMessage = "Task not found",
+                        ResponseMessage = "Project not found",
                         Data = null
                     };
 
@@ -247,14 +247,113 @@ namespace TaskManager.Infrastructure.Services
             }
         }
 
-        public async Task<GenericResponse<ProjectResponse>> GetProjectByProjectId(string ProjectId)
+        public async Task<GenericResponse<ProjectResponse>> GetProjectByProjectId(string projectIdString)
         {
-            throw new NotImplementedException();
+            try
+            {
+                //  CHECK IF REQUIRED INPUTS ARE ENTERED
+                if (string.IsNullOrEmpty(projectIdString))
+                    return new GenericResponse<ProjectResponse>
+                    {
+                        IsSuccessful = false,
+                        ResponseCode = "400",
+                        ResponseMessage = "Kindly enter your project Id in the query string",
+                        Data = null
+                    };
+
+                // THIS WILL GET ALL TASKS FROM THE REPOSITORY
+                Guid projectIdGuid = new Guid(projectIdString);
+                var responseFromDb = await _repository.ProjectRepository.GetProjectByProjectId(projectIdGuid, false);
+
+                //  CHECK IF TASK EXIST
+                if (responseFromDb == null)
+                    return new GenericResponse<ProjectResponse>
+                    {
+                        IsSuccessful = true,
+                        ResponseCode = "200",
+                        ResponseMessage = "Project not found",
+                        Data = null
+                    };
+
+                var response = new ProjectResponse()
+                {
+                    Id = responseFromDb.ProjectId.ToString(),
+                    Name = responseFromDb.Name,
+                    Description = responseFromDb.Description,
+                    AssociatedTasks = responseFromDb.Tasks
+                };
+
+                return new GenericResponse<ProjectResponse>
+                {
+                    IsSuccessful = true,
+                    ResponseCode = "200",
+                    ResponseMessage = "Successfully fetched project",
+                    Data = response
+                };
+            }
+            catch (Exception ex)
+            {
+                return new GenericResponse<ProjectResponse>
+                {
+                    IsSuccessful = false,
+                    ResponseCode = "400",
+                    ResponseMessage = "Error occured while getting your project",
+                    Data = null
+                };
+            }
         }
 
-        public async Task<GenericResponse<ProjectResponse>> UpdateProject(string ProjectIdString, CreateProjectRequest request)
+        public async Task<GenericResponse<ProjectResponse>> UpdateProject(string projectIdString, CreateProjectRequest request)
         {
-            throw new NotImplementedException();
+            try
+            {
+                //  CHECK IF REQUIRED INPUTS ARE ENTERED
+                if (string.IsNullOrEmpty(projectIdString))
+                    return new GenericResponse<ProjectResponse>
+                    {
+                        IsSuccessful = false,
+                        ResponseCode = "400",
+                        ResponseMessage = "Kindly enter your project Id in the query string",
+                        Data = null
+                    };
+
+                
+                Guid projectIdGuid = new Guid(projectIdString);
+                var checkIfProjectExist = await _repository.ProjectRepository.GetProjectByProjectId(projectIdGuid, true);
+
+                //  CHECK IF THE TASK EXIST
+                if (checkIfProjectExist == null)
+                    return new GenericResponse<ProjectResponse>
+                    {
+                        IsSuccessful = false,
+                        ResponseCode = "400",
+                        ResponseMessage = "Project not found",
+                        Data = null
+                    };
+
+                checkIfProjectExist.Name = request.Name;
+                checkIfProjectExist.Description = request.Description;
+                _repository.ProjectRepository.UpdateProject(checkIfProjectExist);
+                await _repository.SaveAsync();
+
+                return new GenericResponse<ProjectResponse>
+                {
+                    IsSuccessful = true,
+                    ResponseCode = "200",
+                    ResponseMessage = "Successfully updated your project in the database",
+                    Data = null
+                };
+            }
+            catch (Exception ex)
+            {
+                return new GenericResponse<ProjectResponse>
+                {
+                    IsSuccessful = false,
+                    ResponseCode = "400",
+                    ResponseMessage = "Error occured while updating your project",
+                    Data = null
+                };
+            }
         }
     }
 }
