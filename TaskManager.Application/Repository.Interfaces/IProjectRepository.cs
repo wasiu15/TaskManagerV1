@@ -14,6 +14,7 @@ namespace TaskManager.Application.Repository.Interfaces
         void UpdateProject(Project project);
         void DeleteProject(Project project);
         Task<Project> GetProjectByProjectId(Guid projectId, bool trackChanges);
-        Task<IEnumerable<Project>> GetProjects();
+        Task<Project> GetProjectByNameAndDescription(string projectName, string projectDescription, bool trackChanges);
+        Task<List<Project>> GetProjects();
     }
 }

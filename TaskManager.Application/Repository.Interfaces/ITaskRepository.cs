@@ -17,5 +17,6 @@ namespace TaskManager.Application.Repository.Interfaces
         Task<IEnumerable<UserTask>> GetTasksDueThisWeek(DateOnly todayDate, DateOnly lastDayOfCurrentWeek, bool trackChanges);
         Task<IEnumerable<UserTask>> GetTasks();
         Task<IEnumerable<UserTask>> GetTasksByStatusOrPriority(Status status, Priority priority, bool trackChanges);
+        Task<IEnumerable<UserTask>> GetTasksByProjectId(Guid projectId, bool trackChanges);
     }
 }

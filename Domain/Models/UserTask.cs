@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Domain.Models
 {
     //  I NAMED THIS USERTASK AND NOT JUST TASK BECAUSE TASK IS A RESERVED WORD
-    public class UserTask
+    public partial class UserTask
     {
         [Key]
         public Guid TaskId { get; set; }
@@ -13,5 +13,6 @@ namespace Domain.Models
         public DateOnly DueDate { get; set; }
         public Priority Priority { get; set; }
         public Status Status { get; set; }
+        public Guid? ProjectId { get; set; }
     }
 }

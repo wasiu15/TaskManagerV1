@@ -71,7 +71,7 @@ namespace TaskManager.Presentation.Migrations
                     b.HasData(
                         new
                         {
-                            TaskId = new Guid("ff45c6e4-6d01-4493-94df-a57fd09c4dcb"),
+                            TaskId = new Guid("23748e5b-bf9d-4410-a214-9f0ebd307273"),
                             Description = "Gym workout",
                             DueDate = new DateOnly(2023, 11, 10),
                             Priority = 2,
@@ -80,7 +80,7 @@ namespace TaskManager.Presentation.Migrations
                         },
                         new
                         {
-                            TaskId = new Guid("e66fe9bc-1050-4923-9778-18a917182905"),
+                            TaskId = new Guid("4cf87529-5be3-4f49-9962-dc5c8d6326aa"),
                             Description = "Research industry trends",
                             DueDate = new DateOnly(2023, 10, 12),
                             Priority = 2,
@@ -92,13 +92,13 @@ namespace TaskManager.Presentation.Migrations
             modelBuilder.Entity("Domain.Models.UserTask", b =>
                 {
                     b.HasOne("Domain.Models.Project", null)
-                        .WithMany("Tasks")
+                        .WithMany("UserTasks")
                         .HasForeignKey("ProjectId");
                 });
 
             modelBuilder.Entity("Domain.Models.Project", b =>
                 {
-                    b.Navigation("Tasks");
+                    b.Navigation("UserTasks");
                 });
 #pragma warning restore 612, 618
         }

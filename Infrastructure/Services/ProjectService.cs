@@ -1,4 +1,5 @@
-﻿using Domain.Models;
+﻿using Domain;
+using Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,9 +34,9 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = true,
                         ResponseCode = "200",
                         ResponseMessage = "No projects found",
-                        Data = null
                     };
 
+                //  LOOP ALL THE PROJECTS INTO THE RESPONSE FIELD
                 var response = new List<ProjectResponse>();
                 foreach (var project in allProjects)
                 {
@@ -43,11 +44,10 @@ namespace TaskManager.Infrastructure.Services
                     {
                         Id = project.ProjectId.ToString(),
                         Name = project.Name,
-                        Description = project.Description,
-                        AssociatedTasks = project.Tasks
+                        Description = project.Description
                     });
                 }
-                
+
                 return new GenericResponse<IEnumerable<ProjectResponse>>
                 {
                     IsSuccessful = true,
@@ -95,9 +95,9 @@ namespace TaskManager.Infrastructure.Services
                         Data = null
                     };
 
-                //  CHECK IF TASK EXIST IN DATABASE
+                //  CHECK IF PROJECT EXIST IN DATABASE
                 Guid projectIdGuid = new Guid(projectId);
-                var getProjectFromDb = await _repository.ProjectRepository.GetProjectByProjectId(projectIdGuid, false);
+                var getProjectFromDb = await _repository.ProjectRepository.GetProjectByProjectId(projectIdGuid, true);
                 if (getProjectFromDb == null)
                     return new GenericResponse<ProjectResponse>
                     {
@@ -109,8 +109,8 @@ namespace TaskManager.Infrastructure.Services
 
                 //  TRANSFER ALL CURRENT TASKS IN THE PROJECT INTO A NEW VARIABLE SO IT WILL BE MANIPULATED EASILY
                 List<UserTask> getProjectTasks = new List<UserTask>();
-                if (getProjectFromDb.Tasks != null)
-                    foreach (var task in getProjectFromDb.Tasks)
+                if (getProjectFromDb.UserTasks != null)
+                    foreach (var task in getProjectFromDb.UserTasks)
                     {
                         getProjectTasks.Add(task);
                     }
@@ -127,9 +127,11 @@ namespace TaskManager.Infrastructure.Services
 
                 //  ADD THE NEW TASK TO THE ARRAY AND SAVE TO THE DB
                 getProjectTasks.Add(getTaskFromDb);
-                getProjectFromDb.Tasks = getProjectTasks;
+                getProjectFromDb.UserTasks = getProjectTasks;
                 _repository.ProjectRepository.UpdateProject(getProjectFromDb);
                 await _repository.SaveAsync();
+
+                var temp = await _repository.ProjectRepository.GetProjectByProjectId(projectIdGuid, true);
 
                 return new GenericResponse<ProjectResponse>
                 {
@@ -165,18 +167,27 @@ namespace TaskManager.Infrastructure.Services
                         Data = null
                     };
 
-                List<UserTask> emptyArray = new List<UserTask>();
+                //  CHECK IF PROJECT ALREADY EXIST
+                var isProjectExist = await _repository.ProjectRepository.GetProjectByNameAndDescription(project.Name, project.Description, false);
+                if (isProjectExist != null)
+                    return new GenericResponse<ProjectResponse>
+                    {
+                        IsSuccessful = false,
+                        ResponseCode = "400",
+                        ResponseMessage = "Sorry, project already exist",
+                        Data = null
+                    };
+
+                //  CHECK PROJECT OBJECT WHICH WE WILL SEND TO THE DATABASE BEFORE THE PROJECT MODEL IS OUR ENTITY
                 Project projectToSave = new Project
                 {
                     ProjectId = Guid.NewGuid(),
                     Name = project.Name,
                     Description = project.Description,
-                    Tasks = emptyArray
                 };
                 _repository.ProjectRepository.CreateProject(projectToSave);
                 await _repository.SaveAsync();
 
-                //  CHECK IF THE LIST IS EMPTY
                 return new GenericResponse<ProjectResponse>
                 {
                     IsSuccessful = true,
@@ -247,58 +258,72 @@ namespace TaskManager.Infrastructure.Services
             }
         }
 
-        public async Task<GenericResponse<ProjectResponse>> GetProjectByProjectId(string projectIdString)
+        public async Task<GenericResponse<ProjectDto>> GetProjectByProjectId(string projectIdString)
         {
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
                 if (string.IsNullOrEmpty(projectIdString))
-                    return new GenericResponse<ProjectResponse>
+                    return new GenericResponse<ProjectDto>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Kindly enter your project Id in the query string",
-                        Data = null
                     };
 
                 // THIS WILL GET ALL TASKS FROM THE REPOSITORY
                 Guid projectIdGuid = new Guid(projectIdString);
                 var responseFromDb = await _repository.ProjectRepository.GetProjectByProjectId(projectIdGuid, false);
 
-                //  CHECK IF TASK EXIST
+                //  CHECK IF PROJECT EXIST
                 if (responseFromDb == null)
-                    return new GenericResponse<ProjectResponse>
+                    return new GenericResponse<ProjectDto>
                     {
                         IsSuccessful = true,
                         ResponseCode = "200",
                         ResponseMessage = "Project not found",
-                        Data = null
                     };
 
-                var response = new ProjectResponse()
+                //  FETCH ALL ASSIGNED TASKED BASED OF THE PRODUCT ID WHICH IS OUR FOREIGN KEY
+                var getAssignedTasks = await _repository.TaskRepository.GetTasksByProjectId(projectIdGuid, false);
+                
+                //  MAP THE REQUIRED DATA WE NEED THE USERS TO SEE INTO A NEW DTO WHICH IS THE TASKDTO FOR THE RESPONSE
+                List<TaskDto> assignedTasksDto = new List<TaskDto>();
+                foreach (var task in getAssignedTasks)
                 {
-                    Id = responseFromDb.ProjectId.ToString(),
+                    assignedTasksDto.Add(new TaskDto
+                    {
+                        Title = task.Title,
+                        Description = task.Description,
+                        DueDate = task.DueDate,
+                        Priority = task.Priority,
+                        Status = task.Status
+                    });
+                }
+
+                //  THIS IS THE RESPONSE DATA TO SEND BACK TO OUR CONSUMER
+                var response = new ProjectDto()
+                {
                     Name = responseFromDb.Name,
                     Description = responseFromDb.Description,
-                    AssociatedTasks = responseFromDb.Tasks
+                    AssociatedTasks = assignedTasksDto.ToArray()
                 };
 
-                return new GenericResponse<ProjectResponse>
+                return new GenericResponse<ProjectDto>
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
-                    ResponseMessage = "Successfully fetched project",
+                    ResponseMessage = "Successfully fetched project and the total tasks attached is: "+ getAssignedTasks.Count(),
                     Data = response
                 };
             }
             catch (Exception ex)
             {
-                return new GenericResponse<ProjectResponse>
+                return new GenericResponse<ProjectDto>
                 {
                     IsSuccessful = false,
                     ResponseCode = "400",
                     ResponseMessage = "Error occured while getting your project",
-                    Data = null
                 };
             }
         }
@@ -317,7 +342,6 @@ namespace TaskManager.Infrastructure.Services
                         Data = null
                     };
 
-                
                 Guid projectIdGuid = new Guid(projectIdString);
                 var checkIfProjectExist = await _repository.ProjectRepository.GetProjectByProjectId(projectIdGuid, true);
 
@@ -335,6 +359,7 @@ namespace TaskManager.Infrastructure.Services
                 checkIfProjectExist.Description = request.Description;
                 _repository.ProjectRepository.UpdateProject(checkIfProjectExist);
                 await _repository.SaveAsync();
+
 
                 return new GenericResponse<ProjectResponse>
                 {

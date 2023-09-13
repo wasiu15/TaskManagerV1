@@ -22,6 +22,7 @@ namespace TaskManager.Infrastructure.Repositories
         public void UpdateProject(Project project) => Update(project);
         public void DeleteProject(Project project) => Delete(project);
         public async Task<Project> GetProjectByProjectId(Guid projectId, bool trackChanges) => await FindByCondition(x => x.ProjectId.Equals(projectId), trackChanges).FirstOrDefaultAsync();
-        public async Task<IEnumerable<Project>> GetProjects() => await FindAll(false).ToListAsync();
+        public async Task<Project> GetProjectByNameAndDescription(string projectName, string projectDescription, bool trackChanges) => await FindByCondition(x => x.Name.Equals(projectName) && x.Description.Equals(projectDescription), trackChanges).FirstOrDefaultAsync();
+        public async Task<List<Project>> GetProjects() => await FindAll(false).ToListAsync();
     }
 }

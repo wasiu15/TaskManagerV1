@@ -10,7 +10,7 @@ namespace TaskManager.Application.Service.Interfaces
     public interface IProjectService
     {
         Task<GenericResponse<IEnumerable<ProjectResponse>>> GetAllProjects();
-        Task<GenericResponse<ProjectResponse>> GetProjectByProjectId(string ProjectId);
+        Task<GenericResponse<ProjectDto>> GetProjectByProjectId(string ProjectId);
         Task<GenericResponse<ProjectResponse>> CreateProject(CreateProjectRequest task);
         Task<GenericResponse<ProjectResponse>> AssignTask(string projectId, string taskId);
         Task<GenericResponse<ProjectResponse>> UpdateProject(string ProjectIdString, CreateProjectRequest request);

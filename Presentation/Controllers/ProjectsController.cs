@@ -25,7 +25,7 @@ namespace TaskManager.Presentation.Controllers
         [HttpGet("getProjectById")]
         public async Task<ActionResult> GetProjectById([FromQuery] string projectId)
         {
-            var response = await _serviceManager.TaskService.GetTaskByTaskId(projectId);
+            var response = await _serviceManager.ProjectService.GetProjectByProjectId(projectId);
             return Ok(response);
         }
 
@@ -37,13 +37,13 @@ namespace TaskManager.Presentation.Controllers
         }
 
         [HttpPatch("updateProject")]
-        public async Task<ActionResult> UpdateProject(CreateProjectRequest project)
+        public async Task<ActionResult> UpdateProject([FromQuery]string projectId, [FromBody] CreateProjectRequest project)
         {
-            var response = await _serviceManager.ProjectService.CreateProject(project);
+            var response = await _serviceManager.ProjectService.UpdateProject(projectId, project);
             return Ok(response);
         }
 
-        [HttpPatch("assignProject")]
+        [HttpPatch("assignTask")]
         public async Task<ActionResult> AssignProject([FromQuery] string projectId,[FromBody] AssignTaskRequest request)
         {
             var response = await _serviceManager.ProjectService.AssignTask(projectId, request.TaskId);
