@@ -14,8 +14,8 @@ namespace TaskManager.Application.Service.Interfaces
         Task<GenericResponse<TaskResponse>> GetTaskByTaskId(string taskId);
         Task<GenericResponse<IEnumerable<TaskResponse>>> GetTasksDueThisWeek();
         Task<GenericResponse<IEnumerable<TaskResponse>>> GetTaskByPriorityOrStatus(StatusAndPriorityRequest request);
-        Task<GenericResponse<CreateTaskRequest>> CreateTask(CreateTaskRequest task);
-        Task<GenericResponse<TaskDto>> UpdateTask(string taskIdString, StatusAndPriorityRequest request);
-        Task<GenericResponse<TaskDto>> DeleteTask(string taskId);
+        Task<GenericResponse<TaskResponse>> CreateTask(CreateTaskRequest task);
+        Task<GenericResponse<TaskResponse>> UpdateTask(string taskIdString, StatusAndPriorityRequest request);
+        Task<GenericResponse<TaskResponse>> DeleteTask(string taskId);
     }
 }

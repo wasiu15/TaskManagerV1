@@ -10,6 +10,7 @@ namespace TaskManager.Application.Repository.Interfaces
     public interface IRepositoryManager
     {
         ITaskRepository TaskRepository { get; }
+        IProjectRepository ProjectRepository { get; }
         Task SaveAsync();
     }
 }

@@ -11,12 +11,15 @@ namespace TaskManager.Infrastructure.Services
     public sealed class ServiceManager : IServiceManager
     {
         private readonly Lazy<ITaskService> _taskService;
+        private readonly Lazy<IProjectService> _projectService;
 
         public ServiceManager(IRepositoryManager repositoryManager)
         {
             _taskService = new Lazy<ITaskService>(() => new TaskService(repositoryManager));
+            _projectService = new Lazy<IProjectService>(() => new ProjectService(repositoryManager));
         }
 
         public ITaskService TaskService => _taskService.Value;
+        public IProjectService ProjectService => _projectService.Value;
     }
 }

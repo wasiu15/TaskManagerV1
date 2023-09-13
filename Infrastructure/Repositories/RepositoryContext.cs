@@ -15,5 +15,6 @@ namespace Infrastructure.Repositories
         }
 
         public DbSet<UserTask>? Tasks { get; set; }
+        public DbSet<Project>? Projects { get; set; }
     }
 }

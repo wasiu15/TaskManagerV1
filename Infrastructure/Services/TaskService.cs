@@ -241,7 +241,7 @@ namespace TaskManager.Infrastructure.Services
                 };
             }
         }
-        public async Task<GenericResponse<CreateTaskRequest>> CreateTask(CreateTaskRequest task)
+        public async Task<GenericResponse<TaskResponse>> CreateTask(CreateTaskRequest task)
         {
             try
             {
@@ -250,7 +250,7 @@ namespace TaskManager.Infrastructure.Services
                 
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
                 if(string.IsNullOrEmpty(task.Title) || string.IsNullOrEmpty(task.Description) || string.IsNullOrEmpty(dueDateInStringFormat))
-                    return new GenericResponse<CreateTaskRequest>
+                    return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -260,7 +260,7 @@ namespace TaskManager.Infrastructure.Services
 
                 //  CHECK IF THE PRIORITY IS PART OF WHAT WE HAVE IN OUR ENUM.......... AND ENSURE USER CAN NOT SELECT NONE WHILE CREATING
                 if (!Enum.IsDefined(typeof(Priority), task.Priority) || Priority.None == task.Priority)
-                    return new GenericResponse<CreateTaskRequest>
+                    return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -271,7 +271,7 @@ namespace TaskManager.Infrastructure.Services
                 //  TRY TO CONVERT THE DATETIME
                 if (!DateOnly.TryParse(dueDateInStringFormat, out dueDateInDateFormat))
                 {
-                    return new GenericResponse<CreateTaskRequest>
+                    return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -283,7 +283,7 @@ namespace TaskManager.Infrastructure.Services
                 //  PREVENT A USER FROM SELECTING A PAST DATE AS DUE DATE
                 if (dueDateInDateFormat < DateOnly.FromDateTime(DateTime.UtcNow))
                 {
-                    return new GenericResponse<CreateTaskRequest>
+                    return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -305,7 +305,7 @@ namespace TaskManager.Infrastructure.Services
                 await _repository.SaveAsync();
 
                 //  CHECK IF THE LIST IS EMPTY
-                return new GenericResponse<CreateTaskRequest>
+                return new GenericResponse<TaskResponse>
                 {
                     IsSuccessful = true,
                     ResponseCode = "201",
@@ -315,7 +315,7 @@ namespace TaskManager.Infrastructure.Services
             }
             catch (Exception ex)
             {
-                return new GenericResponse<CreateTaskRequest>
+                return new GenericResponse<TaskResponse>
                 {
                     IsSuccessful = false,
                     ResponseCode = "400",
@@ -324,13 +324,13 @@ namespace TaskManager.Infrastructure.Services
                 };
             }
         }
-        public async Task<GenericResponse<TaskDto>> UpdateTask(string taskIdString, StatusAndPriorityRequest request)
+        public async Task<GenericResponse<TaskResponse>> UpdateTask(string taskIdString, StatusAndPriorityRequest request)
         {
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
                 if (string.IsNullOrEmpty(taskIdString))
-                    return new GenericResponse<TaskDto>
+                    return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -340,7 +340,7 @@ namespace TaskManager.Infrastructure.Services
 
                 //  CHECK IF THE STATUS IS PART OF WHAT WE HAVE IN OUR ENUM
                 if (!Enum.IsDefined(typeof(Status), request.TaskStatus))
-                    return new GenericResponse<TaskDto>
+                    return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -349,7 +349,7 @@ namespace TaskManager.Infrastructure.Services
                     };
                 //  CHECK IF THE PRIORITY IS PART OF WHAT WE HAVE IN OUR ENUM
                 if (!Enum.IsDefined(typeof(Priority), request.TaskPriority))
-                    return new GenericResponse<TaskDto>
+                    return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -362,7 +362,7 @@ namespace TaskManager.Infrastructure.Services
                 
                 //  CHECK IF THE TASK EXIST
                 if (checkIfTaskExist == null)
-                    return new GenericResponse<TaskDto>
+                    return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -374,7 +374,7 @@ namespace TaskManager.Infrastructure.Services
                 DateOnly dueDate = (DateOnly)checkIfTaskExist.DueDate;
                 if (dueDate < DateOnly.FromDateTime(DateTime.UtcNow))
                 {
-                    return new GenericResponse<TaskDto>
+                    return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -389,7 +389,7 @@ namespace TaskManager.Infrastructure.Services
                 _repository.TaskRepository.UpdateTask(checkIfTaskExist);
                 await _repository.SaveAsync();
                  
-                return new GenericResponse<TaskDto>
+                return new GenericResponse<TaskResponse>
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
@@ -399,7 +399,7 @@ namespace TaskManager.Infrastructure.Services
             }
             catch (Exception ex)
             {
-                return new GenericResponse<TaskDto>
+                return new GenericResponse<TaskResponse>
                 {
                     IsSuccessful = false,
                     ResponseCode = "400",
@@ -408,13 +408,13 @@ namespace TaskManager.Infrastructure.Services
                 };
             }
         }
-        public async Task<GenericResponse<TaskDto>> DeleteTask(string taskIdString)
+        public async Task<GenericResponse<TaskResponse>> DeleteTask(string taskIdString)
         {
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
                 if (string.IsNullOrEmpty(taskIdString))
-                    return new GenericResponse<TaskDto>
+                    return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -427,7 +427,7 @@ namespace TaskManager.Infrastructure.Services
                 
                 //  CHECK IF THE TASK EXIST
                 if (checkIfTaskExist == null)
-                    return new GenericResponse<TaskDto>
+                    return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -438,7 +438,7 @@ namespace TaskManager.Infrastructure.Services
                 _repository.TaskRepository.DeleteTask(checkIfTaskExist);
                 await _repository.SaveAsync();
 
-                return new GenericResponse<TaskDto>
+                return new GenericResponse<TaskResponse>
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
@@ -448,7 +448,7 @@ namespace TaskManager.Infrastructure.Services
             }
             catch (Exception ex)
             {
-                return new GenericResponse<TaskDto>
+                return new GenericResponse<TaskResponse>
                 {
                     IsSuccessful = false,
                     ResponseCode = "400",
