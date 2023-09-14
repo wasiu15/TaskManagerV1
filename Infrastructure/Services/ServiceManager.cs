@@ -15,11 +15,12 @@ namespace TaskManager.Infrastructure.Services
         private readonly Lazy<IUserService> _userService;
         private readonly Lazy<INotificationService> _notificationService;
 
-        public ServiceManager(IRepositoryManager repositoryManager)
+
+        public ServiceManager(IRepositoryManager repositoryManager, ITokenManager tokenManager)
         {
             _taskService = new Lazy<ITaskService>(() => new TaskService(repositoryManager));
             _projectService = new Lazy<IProjectService>(() => new ProjectService(repositoryManager));
-            _userService = new Lazy<IUserService>(() => new UserService(repositoryManager));
+            _userService = new Lazy<IUserService>(() => new UserService(repositoryManager, tokenManager));
             _notificationService = new Lazy<INotificationService>(() => new NotificationService(repositoryManager));
         }
 

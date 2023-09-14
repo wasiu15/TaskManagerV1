@@ -14,6 +14,7 @@ namespace TaskManager.Application.Repository.Interfaces
         void DeleteUser(User user);
         Task<User> GetByUserId(Guid userId, bool trackChanges);
         Task<User> GetByEmail(string email, bool trackChanges);
+        Task<User> GetByEmailAndPassword(string email, string password, bool trackChanges);
         Task<List<User>> GetUsers();
     }
 }

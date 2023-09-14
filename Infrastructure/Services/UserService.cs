@@ -14,10 +14,12 @@ namespace TaskManager.Infrastructure.Services
     public class UserService: IUserService
     {
         private readonly IRepositoryManager _repository;
+        private readonly ITokenManager _tokenManager;
 
-        public UserService(IRepositoryManager repository)
+        public UserService(IRepositoryManager repository, ITokenManager tokenManager)
         {
-            this._repository = repository;
+            _repository = repository;
+            _tokenManager = tokenManager;
         }
 
         public async Task<GenericResponse<Response>> CreateUser(RegisterDto registerUser)
@@ -259,6 +261,63 @@ namespace TaskManager.Infrastructure.Services
             }
         }
 
+        public async Task<GenericResponse<LoginResponse>> GetByEmailAndPassword(LoginDto loginRequest, bool trackChanges)
+        {
+            try
+            {
+                //  CHECK IF REQUIRED INPUTS ARE ENTERED
+                if (string.IsNullOrEmpty(loginRequest.Email) || string.IsNullOrEmpty(loginRequest.Password))
+                    return new GenericResponse<LoginResponse>
+                    {
+                        IsSuccessful = false,
+                        ResponseCode = "400",
+                        ResponseMessage = "Kindly enter all required fields",
+                    };
+
+                //  GET USER FROM DATABASE
+                var hashedPassword = Util.StringHasher(loginRequest.Password);
+                var getUserFromDb = await _repository.UserRepository.GetByEmailAndPassword(loginRequest.Email, hashedPassword, trackChanges);
+
+                //  CHECK IF USER EXIST
+                if (getUserFromDb == null)
+                    return new GenericResponse<LoginResponse>
+                    {
+                        IsSuccessful = false,
+                        ResponseCode = "400",
+                        ResponseMessage = "User not found",
+                    };
+
+                //  THIS IS THE RESPONSE DATA TO SEND BACK TO OUR CONSUMER
+                var response = new LoginResponse()
+                {
+                    UserId = getUserFromDb.UserId,
+                    Email = getUserFromDb.Email,
+                    Name = getUserFromDb.Name,
+                    AccessToken = getUserFromDb.AccessToken,
+                    RefreshToken = getUserFromDb.RefreshToken,
+                    CreatedAt = getUserFromDb.CreatedAt,
+                    TokenGenerationTime = getUserFromDb.TokenGenerationTime
+                };
+
+                return new GenericResponse<LoginResponse>
+                {
+                    IsSuccessful = true,
+                    ResponseCode = "200",
+                    ResponseMessage = "Successfully fetched user",
+                    Data = response
+                };
+            }
+            catch (Exception ex)
+            {
+                return new GenericResponse<LoginResponse>
+                {
+                    IsSuccessful = false,
+                    ResponseCode = "400",
+                    ResponseMessage = "Error occured while getting your user",
+                };
+            }
+        }
+
         public async Task<GenericResponse<Response>> UpdateUser(string userIdString, UpdateUserRequest request)
         {
             try
@@ -412,5 +471,71 @@ namespace TaskManager.Infrastructure.Services
                 };
             }
         }
+
+        public async Task<GenericResponse<TokenDto>> RefreshToken(RefreshTokenDto request)
+        {
+            try
+            {
+                var convertUserIdToGuid = new Guid(request.UserId);
+                var user = await _repository.UserRepository.GetByUserId(convertUserIdToGuid, false);
+                //check if user is null or not
+                if (user == null)
+                {
+                    return new GenericResponse<TokenDto>
+                    {
+                        ResponseCode = "400",
+                        ResponseMessage = "User is not logged in or does not exists",
+                        IsSuccessful = false,
+                    };
+                }
+                if (user.RefreshToken != request.RefreshToken)
+                {
+                    return new GenericResponse<TokenDto>
+                    {
+                        ResponseCode = "400",
+                        ResponseMessage = "Refresh token not valid",
+                        IsSuccessful = false,
+                    };
+                }
+
+                var loginResponse = new GenericResponse<LoginResponse>
+                {
+                    ResponseCode = "00",
+                    ResponseMessage = "Success",
+                    Data = new LoginResponse
+                    {
+                        UserId = user.UserId,
+                        Name = user.Name,
+                        Email = user.Email,
+                        CreatedAt = user.CreatedAt,
+                    }
+                };
+
+                var tokenDto = new TokenDto
+                {
+                    AccessToken = _tokenManager.GenerateToken(ref loginResponse),
+                    RefreshToken = _tokenManager.GenerateRefreshToken()
+                };
+
+                return new GenericResponse<TokenDto>
+                {
+                    ResponseCode = "200",
+                    ResponseMessage = "Success",
+                    IsSuccessful = true,
+                    Data = tokenDto
+                };
+            }
+            catch (Exception ex)
+            {
+                return new GenericResponse<TokenDto>
+                {
+                    ResponseCode = "500",
+                    ResponseMessage = "Something went wrong while refreshing your token",
+                    IsSuccessful = false,
+                    Data = null
+                };
+            }
+        }
+
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Domain;
 using Domain.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using TaskManager.Application.Service.Interfaces;
@@ -9,6 +10,8 @@ namespace TaskManager.Presentation.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
+
     public class TasksController : ControllerBase
     {
         private readonly IServiceManager _serviceManager;

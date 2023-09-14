@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using TaskManager.Application.Service.Interfaces;
 using TaskManager.Domain.Dtos;
@@ -7,6 +8,8 @@ namespace TaskManager.Presentation.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
+
     public class ProjectsController : ControllerBase
     {
         private readonly IServiceManager _serviceManager;
