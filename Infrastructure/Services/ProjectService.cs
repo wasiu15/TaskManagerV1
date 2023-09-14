@@ -69,7 +69,7 @@ namespace TaskManager.Infrastructure.Services
 
         }
 
-        public async Task<GenericResponse<ProjectResponse>> AssignTask(string projectId, string taskId)
+        public async Task<GenericResponse<ProjectResponse>> AssignTask(string projectId, AddOrDelete operation, string taskId)
         {
             try
             {
@@ -80,18 +80,6 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Kindly enter all field",
-                        Data = null
-                    };
-
-                //  CHECK IF TASK EXIST IN DATABASE
-                Guid taskIdGuid = new Guid(taskId);
-                var getTaskFromDb = await _repository.TaskRepository.GetTaskByTaskId(taskIdGuid, false);
-                if (getTaskFromDb == null)
-                    return new GenericResponse<ProjectResponse>
-                    {
-                        IsSuccessful = false,
-                        ResponseCode = "400",
-                        ResponseMessage = "The task you just assigned does not exist",
                         Data = null
                     };
 
@@ -107,37 +95,73 @@ namespace TaskManager.Infrastructure.Services
                         Data = null
                     };
 
-                //  TRANSFER ALL CURRENT TASKS IN THE PROJECT INTO A NEW VARIABLE SO IT WILL BE MANIPULATED EASILY
-                List<UserTask> getProjectTasks = new List<UserTask>();
-                if (getProjectFromDb.UserTasks != null)
-                    foreach (var task in getProjectFromDb.UserTasks)
-                    {
-                        getProjectTasks.Add(task);
-                    }
+                //  CHECK IF TASK EXIST IN DATABASE
+                Guid taskIdGuid = new Guid(taskId);
+                var checkIfTaskExistInUserTaskDb = await _repository.TaskRepository.GetTaskByTaskId(taskIdGuid, false);
 
-                //  CHECK IF THE TASK TO ADD ALREADY EXIST
-                if (getProjectTasks.Contains(getTaskFromDb))
+                if (checkIfTaskExistInUserTaskDb == null)
+                {
                     return new GenericResponse<ProjectResponse>
                     {
-                        IsSuccessful = true,
-                        ResponseCode = "200",
-                        ResponseMessage = "This task exist in your project already",
+                        IsSuccessful = false,
+                        ResponseCode = "400",
+                        ResponseMessage = "The task you just assigned does not exist",
                         Data = null
                     };
+                }
+                else
+                {
+                    //  TRANSFER ALL CURRENT TASKS IN THE PROJECT INTO A NEW VARIABLE SO IT WILL BE MANIPULATED EASILY
+                    List<UserTask> getProjectTasks = (List<UserTask>)await _repository.TaskRepository.GetTasksByProjectId(projectIdGuid, true);
+                    
+                    //  THIS CONDITION WILL CHECK IF WE NEED TO ADD OR DELETE THE TASK
+                    if (operation == AddOrDelete.Add)
+                    {
+                        //  CHECK IF THE TASK TO ADD ALREADY EXIST
+                        if (Util.IsListContainTask(getProjectTasks, checkIfTaskExistInUserTaskDb))
+                        {
+                            return new GenericResponse<ProjectResponse>
+                            {
+                                IsSuccessful = false,
+                                ResponseCode = "400",
+                                ResponseMessage = "This task exist in your project already",
+                            };
+                        }
+                        else
+                        {
+                            //  ADD THE NEW TASK TO THE ARRAY AND SAVE TO THE DB
+                            getProjectTasks.Add(checkIfTaskExistInUserTaskDb);
+                        }
+                    }
+                    else if (operation == AddOrDelete.Delete)
+                    {
+                        //  CHECK IF THE TASK TO ADD ALREADY EXIST
+                        if (Util.IsListContainTask(getProjectTasks, checkIfTaskExistInUserTaskDb))
+                        {
+                            //  ADD THE NEW TASK TO THE ARRAY AND SAVE TO THE DB
+                            getProjectTasks.RemoveAll(x => x.TaskId == checkIfTaskExistInUserTaskDb.TaskId);
+                        }
+                        else
+                        {
+                            return new GenericResponse<ProjectResponse>
+                            {
+                                IsSuccessful = false,
+                                ResponseCode = "400",
+                                ResponseMessage = "This task does not exist in your project",
+                            };
+                        }
+                    }
 
-                //  ADD THE NEW TASK TO THE ARRAY AND SAVE TO THE DB
-                getProjectTasks.Add(getTaskFromDb);
-                getProjectFromDb.UserTasks = getProjectTasks;
-                _repository.ProjectRepository.UpdateProject(getProjectFromDb);
-                await _repository.SaveAsync();
+                    getProjectFromDb.UserTasks = getProjectTasks;
+                    _repository.ProjectRepository.UpdateProject(getProjectFromDb);
+                    await _repository.SaveAsync();
 
-                var temp = await _repository.ProjectRepository.GetProjectByProjectId(projectIdGuid, true);
-
+                }
                 return new GenericResponse<ProjectResponse>
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
-                    ResponseMessage = "Your new task have been added to your project",
+                    ResponseMessage = "Your project tasks have been successfully updated",
                     Data = null
                 };
             }
@@ -304,7 +328,7 @@ namespace TaskManager.Infrastructure.Services
                 //  THIS IS THE RESPONSE DATA TO SEND BACK TO OUR CONSUMER
                 var response = new ProjectDto()
                 {
-                    Name = responseFromDb.Name,
+                    Name = responseFromDb.Name, 
                     Description = responseFromDb.Description,
                     AssociatedTasks = assignedTasksDto.ToArray()
                 };

@@ -14,5 +14,6 @@ namespace Domain.Models
         public Priority Priority { get; set; }
         public Status Status { get; set; }
         public Guid? ProjectId { get; set; }
+        public Guid? UserId { get; set; }
     }
 }

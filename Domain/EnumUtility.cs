@@ -20,9 +20,19 @@ namespace Domain
         In_progress = 2,
         completed = 3
     }
-    public enum Type
+    public enum NotificationType
     {
         Due_date = 1,
         Status_update = 2
+    }
+    public enum NotificationStatus
+    {
+        Read = 2,
+        Unread = 1
+    }
+    public enum AddOrDelete
+    {
+        Add = 1,
+        Delete = 0
     }
 }

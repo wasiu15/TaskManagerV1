@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,41 +11,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace TaskManager.Presentation.Migrations
 {
     [DbContext(typeof(RepositoryContext))]
-    partial class RepositoryContextModelSnapshot : ModelSnapshot
+    [Migration("20230914030512_added_User_db")]
+    partial class added_User_db
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.10");
-
-            modelBuilder.Entity("Domain.Models.Notification", b =>
-                {
-                    b.Property<Guid>("NotificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ReadStatus")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TaskId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("Time")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("NotificationId");
-
-                    b.ToTable("Notifications");
-                });
 
             modelBuilder.Entity("Domain.Models.Project", b =>
                 {
@@ -72,6 +46,7 @@ namespace TaskManager.Presentation.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("AccessToken")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ConfirmPassword")
@@ -95,9 +70,10 @@ namespace TaskManager.Presentation.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("RefreshToken")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("TokenGenerationTime")
+                    b.Property<DateTime>("TokenGenerationTime")
                         .HasColumnType("TEXT");
 
                     b.HasKey("UserId");
@@ -145,7 +121,7 @@ namespace TaskManager.Presentation.Migrations
                     b.HasData(
                         new
                         {
-                            TaskId = new Guid("722dcd8d-0e84-4bb3-853c-c5dca4cb2d11"),
+                            TaskId = new Guid("16614e39-5298-48bf-b96e-92a38a7c5995"),
                             Description = "Gym workout",
                             DueDate = new DateOnly(2023, 11, 10),
                             Priority = 2,
@@ -154,7 +130,7 @@ namespace TaskManager.Presentation.Migrations
                         },
                         new
                         {
-                            TaskId = new Guid("a3eb49a8-b7fd-4fdb-ae5d-8ad260634a29"),
+                            TaskId = new Guid("6861051b-5362-4ed5-8373-6d8ef0434038"),
                             Description = "Research industry trends",
                             DueDate = new DateOnly(2023, 10, 12),
                             Priority = 2,

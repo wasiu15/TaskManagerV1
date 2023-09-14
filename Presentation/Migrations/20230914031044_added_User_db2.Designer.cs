@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,41 +11,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace TaskManager.Presentation.Migrations
 {
     [DbContext(typeof(RepositoryContext))]
-    partial class RepositoryContextModelSnapshot : ModelSnapshot
+    [Migration("20230914031044_added_User_db2")]
+    partial class added_User_db2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.10");
-
-            modelBuilder.Entity("Domain.Models.Notification", b =>
-                {
-                    b.Property<Guid>("NotificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("ReadStatus")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TaskId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("Time")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("NotificationId");
-
-                    b.ToTable("Notifications");
-                });
 
             modelBuilder.Entity("Domain.Models.Project", b =>
                 {
@@ -145,7 +119,7 @@ namespace TaskManager.Presentation.Migrations
                     b.HasData(
                         new
                         {
-                            TaskId = new Guid("722dcd8d-0e84-4bb3-853c-c5dca4cb2d11"),
+                            TaskId = new Guid("0b676a20-256e-4b45-9247-0a836b35c67a"),
                             Description = "Gym workout",
                             DueDate = new DateOnly(2023, 11, 10),
                             Priority = 2,
@@ -154,7 +128,7 @@ namespace TaskManager.Presentation.Migrations
                         },
                         new
                         {
-                            TaskId = new Guid("a3eb49a8-b7fd-4fdb-ae5d-8ad260634a29"),
+                            TaskId = new Guid("eb141467-e83f-4605-b0d3-21d55129babf"),
                             Description = "Research industry trends",
                             DueDate = new DateOnly(2023, 10, 12),
                             Priority = 2,

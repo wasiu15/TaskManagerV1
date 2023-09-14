@@ -46,7 +46,7 @@ namespace TaskManager.Presentation.Controllers
         [HttpPatch("assignTask")]
         public async Task<ActionResult> AssignProject([FromQuery] string projectId,[FromBody] AssignTaskRequest request)
         {
-            var response = await _serviceManager.ProjectService.AssignTask(projectId, request.TaskId);
+            var response = await _serviceManager.ProjectService.AssignTask(projectId, request.Operation, request.TaskId);
             return Ok(response);
         }
 

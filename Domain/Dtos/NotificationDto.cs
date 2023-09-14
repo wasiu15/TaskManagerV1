@@ -1,8 +1,9 @@
-﻿namespace Domain.Models
+﻿using Domain;
+
+namespace TaskManager.Domain.Dtos
 {
-    public class Notification
+    public class NotificationDto
     {
-        public Guid NotificationId { get; set; }
         public string TaskId { get; set; }
         public string Type { get; set; }
         public string Message { get; set; }

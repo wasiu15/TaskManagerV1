@@ -18,5 +18,6 @@ namespace TaskManager.Application.Repository.Interfaces
         Task<IEnumerable<UserTask>> GetTasks();
         Task<IEnumerable<UserTask>> GetTasksByStatusOrPriority(Status status, Priority priority, bool trackChanges);
         Task<IEnumerable<UserTask>> GetTasksByProjectId(Guid projectId, bool trackChanges);
+        Task<IEnumerable<UserTask>> GetTasksByUserId(Guid userId, bool trackChanges);
     }
 }

@@ -20,5 +20,6 @@ namespace TaskManager.Infrastructure.Repositories
         public async Task<IEnumerable<UserTask>> GetTasks() => await FindAll(false).ToListAsync();
         public async Task<IEnumerable<UserTask>> GetTasksByStatusOrPriority(Status status, Priority priority, bool trackChanges) => await FindByCondition(x => x.Status.Equals(status) || x.Priority.Equals(priority), trackChanges).ToListAsync();
         public async Task<IEnumerable<UserTask>> GetTasksByProjectId(Guid projectId, bool trackChanges) => await FindByCondition(x => x.ProjectId.Equals(projectId), trackChanges).ToListAsync();
+        public async Task<IEnumerable<UserTask>> GetTasksByUserId(Guid userId, bool trackChanges) => await FindByCondition(x => x.UserId.Equals(userId), trackChanges).ToListAsync();
     }
 }

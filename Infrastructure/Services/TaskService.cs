@@ -126,7 +126,7 @@ namespace TaskManager.Infrastructure.Services
         {
             try
             {
-                var getLastDateTimeOfCurrentWeek = Helper.GetLastDayOfCurrentWeek();
+                var getLastDateTimeOfCurrentWeek = Util.GetLastDayOfCurrentWeek();
                 var todayDate = DateOnly.FromDateTime(DateTime.UtcNow);
                 var responseFromDb = await _repository.TaskRepository.GetTasksDueThisWeek(todayDate, getLastDateTimeOfCurrentWeek, false);
 
@@ -292,9 +292,15 @@ namespace TaskManager.Infrastructure.Services
                     };
                 }
 
+                var taskId = Guid.NewGuid();
+
+                //  SEND EMAIL TO USER
+                Util.SendEmail("kellylambeth93@gmail.com", NotificationType.Status_update.ToString(), "A new task with id: " + taskId.ToString() + " has been assigned to you at time: "+ DateTime.UtcNow.ToString());
+                
+
                 UserTask taskToSave = new UserTask
                 {
-                    TaskId = Guid.NewGuid(),
+                    TaskId = taskId,
                     Title = task.Title,
                     Description = task.Description,
                     DueDate = dueDateInDateFormat,
@@ -367,10 +373,9 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Task not found",
-                        Data = null
                     };
 
-                //  PREVENT A USER FROM SELECTING A PAST DATE AS DUE DATE
+                //  PREVENT USER FROM UPDATING AN OUTDATED TASK
                 DateOnly dueDate = (DateOnly)checkIfTaskExist.DueDate;
                 if (dueDate < DateOnly.FromDateTime(DateTime.UtcNow))
                 {
@@ -379,8 +384,17 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Sorry, this task has already expired and can not be edited anymore",
-                        Data = null
                     };
+                }
+
+                //  CONFIRM IF THE TASK CURRENT STATUS IS NOT COMPLETED 
+                if (checkIfTaskExist.Status != Status.completed)
+                {
+                    //  THEN CONFIRM IF THE NEW STATUS IS COMPLETED SO THAT A NOTIFICATION WILL BE SENT OUT
+                    if (request.TaskStatus == Status.completed)
+                    {
+                        Util.SendEmail("kellylambeth93@gmail.com",NotificationType.Status_update.ToString(), "The task with id: " + checkIfTaskExist.TaskId + " was just completed  at Time: "+ DateTime.UtcNow.ToString());
+                    }
                 }
 
                 //  THIS CONDITION WILL CHECK IF 0 (i.e 'None') IS ASSIGNED TO EITHER THE STATUS OR THE PRIORITY FIELD SO WE WONT HAVE TO CHANGE THE VALUE
@@ -388,7 +402,9 @@ namespace TaskManager.Infrastructure.Services
                 checkIfTaskExist.Priority = request.TaskPriority == Priority.None ? checkIfTaskExist.Priority : request.TaskPriority;
                 _repository.TaskRepository.UpdateTask(checkIfTaskExist);
                 await _repository.SaveAsync();
-                 
+
+
+
                 return new GenericResponse<TaskResponse>
                 {
                     IsSuccessful = true,
@@ -457,5 +473,6 @@ namespace TaskManager.Infrastructure.Services
                 };
             }
         }
+
     }
 }

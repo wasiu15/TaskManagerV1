@@ -11,6 +11,8 @@ namespace TaskManager.Application.Repository.Interfaces
     {
         ITaskRepository TaskRepository { get; }
         IProjectRepository ProjectRepository { get; }
+        IUserRepository UserRepository { get; }
+        INotificationRepository NotificationRepository { get; }
         Task SaveAsync();
     }
 }
