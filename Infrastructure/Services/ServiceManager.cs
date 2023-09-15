@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using TaskManager.Application.Repository.Interfaces;
 using TaskManager.Application.Service.Interfaces;
+using TaskManager.Infrastructure.Utilities;
 
 namespace TaskManager.Infrastructure.Services
 {
@@ -16,12 +14,12 @@ namespace TaskManager.Infrastructure.Services
         private readonly Lazy<INotificationService> _notificationService;
 
 
-        public ServiceManager(IRepositoryManager repositoryManager, ITokenManager tokenManager)
+        public ServiceManager(IRepositoryManager repositoryManager, ITokenManager tokenManager, IHttpContextAccessor httpContext, IConfiguration configuration, IHttpClientWrapper httpClient)
         {
-            _taskService = new Lazy<ITaskService>(() => new TaskService(repositoryManager));
+            _taskService = new Lazy<ITaskService>(() => new TaskService(repositoryManager, httpContext, configuration, httpClient));
             _projectService = new Lazy<IProjectService>(() => new ProjectService(repositoryManager));
             _userService = new Lazy<IUserService>(() => new UserService(repositoryManager, tokenManager));
-            _notificationService = new Lazy<INotificationService>(() => new NotificationService(repositoryManager));
+            _notificationService = new Lazy<INotificationService>(() => new NotificationService(repositoryManager, httpContext, configuration, httpClient));
         }
 
         public ITaskService TaskService => _taskService.Value;

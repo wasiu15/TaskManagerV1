@@ -1,10 +1,5 @@
 ﻿using Domain;
 using Domain.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TaskManager.Application.Repository.Interfaces;
 using TaskManager.Application.Service.Interfaces;
 using TaskManager.Domain.Dtos;
@@ -32,7 +27,7 @@ namespace TaskManager.Infrastructure.Services
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
-                        ResponseMessage = "Please, enter all fields",
+                        ResponseMessage = "Please, enter all required fields",
                     };
 
                 //  CHECK IF EMAIL FORMAT IS CORRECT
@@ -41,7 +36,7 @@ namespace TaskManager.Infrastructure.Services
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
-                        ResponseMessage = "email is in bad format",
+                        ResponseMessage = "Email is in bad format",
                     };
 
                 //  CHECK IF PASSWORD LENGTH IS ABOVE FOUR CHARS
@@ -51,7 +46,6 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Password must be at least 5 letters",
-                        Data = null
                     };
 
                 //  CHECK IF USER ALREADY EXIST
@@ -60,15 +54,14 @@ namespace TaskManager.Infrastructure.Services
                     return new GenericResponse<Response>
                     {
                         IsSuccessful = false,
-                        ResponseCode = "400",
+                        ResponseCode = "409",
                         ResponseMessage = "Sorry, email already exist",
-                        Data = null
                     };
 
                 var hashedPassword = Util.StringHasher(registerUser.Password);
                 User userToSave = new User
                 {
-                    UserId = Guid.NewGuid(),
+                    UserId = Guid.NewGuid().ToString(),
                     Name = registerUser.Name,
                     Email = registerUser.Email,
                     Password = hashedPassword,
@@ -81,8 +74,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     IsSuccessful = true,
                     ResponseCode = "201",
-                    ResponseMessage = "You just successfully created a new user",
-                    Data = null
+                    ResponseMessage = "User created successfully",
                 };
             }
             catch (Exception ex)
@@ -90,9 +82,8 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<Response>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
-                    ResponseMessage = "Error occured while creating your new user",
-                    Data = null
+                    ResponseCode = "500",
+                    ResponseMessage = "Error occured while creating new user",
                 };
             }
         }
@@ -107,11 +98,10 @@ namespace TaskManager.Infrastructure.Services
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
-                        ResponseMessage = "Please, enter the user Id",
+                        ResponseMessage = "Please, enter the User ID",
                     };
 
-                Guid userGuid = new Guid(userId);
-                var checkIfUserExist = await _repository.UserRepository.GetByUserId(userGuid, true);
+                var checkIfUserExist = await _repository.UserRepository.GetByUserId(userId, true);
 
                 //  CHECK IF THE USER EXIST
                 if (checkIfUserExist == null)
@@ -129,7 +119,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
-                    ResponseMessage = "Successfully deleted your user from the database",
+                    ResponseMessage = "User deleted successfully",
                 };
             }
             catch (Exception ex)
@@ -137,8 +127,8 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<Response>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
-                    ResponseMessage = "Error occured while deleting your user",
+                    ResponseCode = "500",
+                    ResponseMessage = "Error occured while deleting user",
                 };
             }
         }
@@ -175,7 +165,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
-                    ResponseMessage = "Successfully fetched all users. Total number: " + allUsers.Count(),
+                    ResponseMessage = "Users fetched successfully. Total number: " + allUsers.Count(),
                     Data = response
                 };
             }
@@ -184,41 +174,38 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<IEnumerable<UserWithIdDto>>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
-                    ResponseMessage = "Error occured while getting users",
-                    Data = null
+                    ResponseCode = "500",
+                    ResponseMessage = "Error occured while fetching users",
                 };
             }
         }
 
-        public async Task<GenericResponse<UserDto>> GetByUserId(string userIdString)
+        public async Task<GenericResponse<UserDto>> GetByUserId(string userId)
         {
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
-                if (string.IsNullOrEmpty(userIdString))
+                if (string.IsNullOrEmpty((string)userId))
                     return new GenericResponse<UserDto>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
-                        ResponseMessage = "Kindly enter your user Id in the query string",
+                        ResponseMessage = "Please, enter your User ID",
                     };
 
-                // THIS WILL GET ALL TASKS FROM THE REPOSITORY
-                Guid userIdGuid = new Guid(userIdString);
-                var getUserFromDb = await _repository.UserRepository.GetByUserId(userIdGuid, false);
+                var getUserFromDb = await _repository.UserRepository.GetByUserId(userId, false);
 
                 //  CHECK IF USER EXIST
                 if (getUserFromDb == null)
                     return new GenericResponse<UserDto>
                     {
-                        IsSuccessful = true,
-                        ResponseCode = "200",
+                        IsSuccessful = false,
+                        ResponseCode = "400",
                         ResponseMessage = "User not found",
                     };
 
                 //  FETCH ALL ASSIGNED TASKED BASED OF THE PRODUCT ID WHICH IS OUR FOREIGN KEY
-                var getAssignedTasks = await _repository.TaskRepository.GetTasksByUserId(userIdGuid, false);
+                var getAssignedTasks = await _repository.TaskRepository.GetTasksByUserId(userId, false);
 
                 //  MAP THE REQUIRED DATA WE NEED THE USERS TO SEE INTO A NEW DTO WHICH IS THE TASKDTO FOR THE RESPONSE
                 List<TaskDto> assignedTasksDto = new List<TaskDto>();
@@ -246,7 +233,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
-                    ResponseMessage = "Successfully fetched user",
+                    ResponseMessage = "User fetched successfully",
                     Data = response
                 };
             }
@@ -254,9 +241,9 @@ namespace TaskManager.Infrastructure.Services
             {
                 return new GenericResponse<UserDto>
                 {
-                    IsSuccessful = false,
-                    ResponseCode = "400",
-                    ResponseMessage = "Error occured while getting your user",
+                    IsSuccessful = true,
+                    ResponseCode = "500",
+                    ResponseMessage = "Error occured while fetching your user",
                 };
             }
         }
@@ -303,7 +290,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
-                    ResponseMessage = "Successfully fetched user",
+                    ResponseMessage = "User fetched successfully",
                     Data = response
                 };
             }
@@ -312,27 +299,26 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<LoginResponse>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
-                    ResponseMessage = "Error occured while getting your user",
+                    ResponseCode = "500",
+                    ResponseMessage = "Error occured while fetching user",
                 };
             }
         }
 
-        public async Task<GenericResponse<Response>> UpdateUser(string userIdString, UpdateUserRequest request)
+        public async Task<GenericResponse<Response>> UpdateUser(string userId, UpdateUserRequest request)
         {
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
-                if (string.IsNullOrEmpty(userIdString))
+                if (string.IsNullOrEmpty(userId))
                     return new GenericResponse<Response>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
-                        ResponseMessage = "Kindly enter your user Id in the query string",
+                        ResponseMessage = "Please, enter your User ID",
                     };
 
-                Guid userIdGuid = new Guid(userIdString);
-                var checkIfUserExist = await _repository.UserRepository.GetByUserId(userIdGuid, true);
+                var checkIfUserExist = await _repository.UserRepository.GetByUserId(userId, true);
 
                 //  CHECK IF THE USER EXIST
                 if (checkIfUserExist == null)
@@ -352,7 +338,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
-                    ResponseMessage = "Successfully updated your information",
+                    ResponseMessage = "User updated successfully",
                 };
             }
             catch (Exception ex)
@@ -361,7 +347,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     IsSuccessful = false,
                     ResponseCode = "400",
-                    ResponseMessage = "Error occured while updating your project",
+                    ResponseMessage = "Error occured while updating your user",
                 };
             }
         }
@@ -376,25 +362,21 @@ namespace TaskManager.Infrastructure.Services
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
-                        ResponseMessage = "Kindly enter all field",
-                        Data = null
+                        ResponseMessage = "Please, enter all required fields",
                     };
 
                 //  CHECK IF USER EXIST IN DATABASE
-                Guid userIdGuid = new Guid(userId);
-                var getUserFromDb = await _repository.UserRepository.GetByUserId(userIdGuid, true);
+                var getUserFromDb = await _repository.UserRepository.GetByUserId(userId, true);
                 if (getUserFromDb == null)
                     return new GenericResponse<Response>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "User not exist",
-                        Data = null
                     };
 
                 //  CHECK IF TASK EXIST IN DATABASE
-                Guid taskIdGuid = new Guid(taskId);
-                var checkIfTaskExistInUserTaskDb = await _repository.TaskRepository.GetTaskByTaskId(taskIdGuid, false);
+                var checkIfTaskExistInUserTaskDb = await _repository.TaskRepository.GetTaskByTaskId(taskId, false);
 
                 if (checkIfTaskExistInUserTaskDb == null)
                 {
@@ -403,13 +385,12 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "The task you just assigned does not exist",
-                        Data = null
                     };
                 }
                 else
                 {
                     //  TRANSFER ALL CURRENT TASKS IN THE USER INTO A NEW VARIABLE SO IT WILL BE MANIPULATED EASILY
-                    List<UserTask> getUserTasks = (List<UserTask>)await _repository.TaskRepository.GetTasksByUserId(userIdGuid, true);
+                    List<UserTask> getUserTasks = (List<UserTask>)await _repository.TaskRepository.GetTasksByUserId(userId, true);
 
                     //  THIS CONDITION WILL CHECK IF WE NEED TO ADD OR DELETE THE TASK
                     if (operation == AddOrDelete.Add)
@@ -420,7 +401,7 @@ namespace TaskManager.Infrastructure.Services
                             return new GenericResponse<Response>
                             {
                                 IsSuccessful = false,
-                                ResponseCode = "400",
+                                ResponseCode = "409",
                                 ResponseMessage = "This task exist in your profile already",
                             };
                         }
@@ -458,7 +439,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
-                    ResponseMessage = "User task have been successfully updated",
+                    ResponseMessage = "User updated successfully",
                 };
             }
             catch (Exception ex)
@@ -466,7 +447,7 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<Response>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
+                    ResponseCode = "500",
                     ResponseMessage = "Error occured while adding new task to this user",
                 };
             }
@@ -476,8 +457,7 @@ namespace TaskManager.Infrastructure.Services
         {
             try
             {
-                var convertUserIdToGuid = new Guid(request.UserId);
-                var user = await _repository.UserRepository.GetByUserId(convertUserIdToGuid, false);
+                var user = await _repository.UserRepository.GetByUserId(request.UserId, false);
                 //check if user is null or not
                 if (user == null)
                 {
@@ -500,7 +480,7 @@ namespace TaskManager.Infrastructure.Services
 
                 var loginResponse = new GenericResponse<LoginResponse>
                 {
-                    ResponseCode = "00",
+                    ResponseCode = "200",
                     ResponseMessage = "Success",
                     Data = new LoginResponse
                     {
@@ -532,7 +512,6 @@ namespace TaskManager.Infrastructure.Services
                     ResponseCode = "500",
                     ResponseMessage = "Something went wrong while refreshing your token",
                     IsSuccessful = false,
-                    Data = null
                 };
             }
         }

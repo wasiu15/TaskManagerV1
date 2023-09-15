@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using TaskManager.Application.Service.Interfaces;
 using TaskManager.Domain.Dtos;
@@ -23,35 +22,45 @@ namespace TaskManager.Presentation.Controllers
         public async Task<ActionResult> GetAll()
         {
             var response = await _serviceManager.NotificationService.GetAllNotifications();
-            return Ok(response);
+            if (response.IsSuccessful)
+                return Ok(response);
+            return BadRequest(response);
         }
 
         [HttpGet("getNotificationById")]
         public async Task<ActionResult> GetNotificationById([FromQuery] string notificationId)
         {
             var response = await _serviceManager.NotificationService.GetByNotificationId(notificationId);
-            return Ok(response);
+            if (response.IsSuccessful)
+                return Ok(response);
+            return BadRequest(response);
         }
 
         [HttpPost("addNotification")]
         public async Task<ActionResult> AddNotification(CreateNotificationRequest notification)
         {
             var response = await _serviceManager.NotificationService.CreateNotification(notification);
-            return Ok(response);
+            if (response.IsSuccessful)
+                return Ok(response);
+            return BadRequest(response);
         }
 
         [HttpPatch("ReadOrUnread")]
         public async Task<ActionResult> UpdateNotification([FromQuery] string notificationId)
         {
             var response = await _serviceManager.NotificationService.ReadOrUnread(notificationId);
-            return Ok(response);
+            if (response.IsSuccessful)
+                return Ok(response);
+            return BadRequest(response);
         }
 
         [HttpDelete("DeleteUser")]
         public async Task<ActionResult> DeleteNotification([FromQuery] string notificationId)
         {
             var response = await _serviceManager.NotificationService.DeleteNotification(notificationId);
-            return Ok(response);
+            if (response.IsSuccessful)
+                return Ok(response);
+            return BadRequest(response);
         }
 
     }

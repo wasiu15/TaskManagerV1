@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TaskManager.Domain.Dtos;
-
-namespace TaskManager.Application.Repository.Interfaces
+﻿namespace TaskManager.Application.Repository.Interfaces
 {
     public interface IRepositoryManager
     {

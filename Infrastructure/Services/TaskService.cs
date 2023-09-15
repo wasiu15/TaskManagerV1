@@ -1,18 +1,27 @@
 ﻿using Domain;
 using Domain.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using TaskManager.Application.Repository.Interfaces;
 using TaskManager.Application.Service.Interfaces;
 using TaskManager.Domain.Dtos;
+using TaskManager.Infrastructure.Utilities;
 
 namespace TaskManager.Infrastructure.Services
 {
     internal sealed class TaskService : ITaskService
     {
+        private readonly IConfiguration _configuration;
+        private readonly IHttpClientWrapper _httpClient;
+        private readonly IHttpContextAccessor _httpContext;
         private readonly IRepositoryManager _repository;
 
-        public TaskService(IRepositoryManager repositoryManager)
+        public TaskService(IRepositoryManager repositoryManager, IHttpContextAccessor httpContext, IConfiguration configuration, IHttpClientWrapper httpClient)
         {
             _repository = repositoryManager;
+            _httpContext = httpContext;
+            _configuration = configuration;
+            _httpClient = httpClient;
         }
 
         public async Task<GenericResponse<IEnumerable<TaskResponse>>> GetAllTasks()
@@ -23,13 +32,12 @@ namespace TaskManager.Infrastructure.Services
                 var allTasks = await _repository.TaskRepository.GetTasks();
                 
                 //  CHECK IF THE LIST IS EMPTY
-                if (allTasks.Count() == 0)
+                if (allTasks == null)
                     return new GenericResponse<IEnumerable<TaskResponse>>
                     {
-                        IsSuccessful = true,
-                        ResponseCode = "200",
-                        ResponseMessage = "No tasks found",
-                        Data = null
+                        IsSuccessful = false,
+                        ResponseCode = "400",
+                        ResponseMessage = "Tasks not found",
                     };
 
                 var response = new List<TaskResponse>();
@@ -59,38 +67,35 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<IEnumerable<TaskResponse>>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
-                    ResponseMessage = "Error occured while getting Tasks",
-                    Data = null
+                    ResponseCode = "500",
+                    ResponseMessage = "Error occured while fetching Tasks"
                 };
             }
         }
-        public async Task<GenericResponse<TaskResponse>> GetTaskByTaskId(string taskIdString)
+        public async Task<GenericResponse<TaskResponse>> GetTaskByTaskId(string taskId)
         {
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
-                if (string.IsNullOrEmpty(taskIdString))
+                if (string.IsNullOrEmpty(taskId))
                     return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
-                        ResponseMessage = "Kindly enter your task Id in the query string",
-                        Data = null
+                        ResponseMessage = "Kindly enter your Task ID"
                     };
 
                 // THIS WILL GET ALL TASKS FROM THE REPOSITORY
-                Guid taskIdGuid = new Guid(taskIdString);
-                var responseFromDb = await _repository.TaskRepository.GetTaskByTaskId(taskIdGuid, false);
+                Guid taskIdGuid = new Guid(taskId);
+                var responseFromDb = await _repository.TaskRepository.GetTaskByTaskId(taskId, false);
 
                 //  CHECK IF TASK EXIST
                 if (responseFromDb == null)
                     return new GenericResponse<TaskResponse>
                     {
-                        IsSuccessful = true,
-                        ResponseCode = "200",
+                        IsSuccessful = false,
+                        ResponseCode = "400",
                         ResponseMessage = "Task not found",
-                        Data = null
                     };
 
                 var response = new TaskResponse()
@@ -107,7 +112,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
-                    ResponseMessage = "Successfully fetched task",
+                    ResponseMessage = "Task fetched Successfully",
                     Data = response
                 };
             }
@@ -116,9 +121,8 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<TaskResponse>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
-                    ResponseMessage = "Error occured while getting your Task",
-                    Data = null
+                    ResponseCode = "500",
+                    ResponseMessage = "Error occured while fetching your Task",
                 };
             }
         }
@@ -127,7 +131,7 @@ namespace TaskManager.Infrastructure.Services
             try
             {
                 var getLastDateTimeOfCurrentWeek = Util.GetLastDayOfCurrentWeek();
-                var todayDate = DateOnly.FromDateTime(DateTime.UtcNow);
+                var todayDate = DateTime.UtcNow;
                 var responseFromDb = await _repository.TaskRepository.GetTasksDueThisWeek(todayDate, getLastDateTimeOfCurrentWeek, false);
 
                 //  CHECK IF TASK EXIST
@@ -137,7 +141,6 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = true,
                         ResponseCode = "200",
                         ResponseMessage = "No Task found",
-                        Data = null
                     };
 
                 var response = new List<TaskResponse>();
@@ -166,9 +169,8 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<IEnumerable<TaskResponse>>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
-                    ResponseMessage = "Error occured while getting your Task",
-                    Data = null
+                    ResponseCode = "500",
+                    ResponseMessage = "Error occured while fetching your Task",
                 };
             }
         }
@@ -180,13 +182,12 @@ namespace TaskManager.Infrastructure.Services
                 var responseFromDb = await _repository.TaskRepository.GetTasksByStatusOrPriority(request.TaskStatus, request.TaskPriority, false);
 
                 //  CHECK IF THE LIST IS EMPTY
-                if (responseFromDb.Count() == 0)
+                if (responseFromDb == null)
                     return new GenericResponse<IEnumerable<TaskResponse>>
                     {
-                        IsSuccessful = true,
-                        ResponseCode = "200",
-                        ResponseMessage = "No tasks found",
-                        Data = null
+                        IsSuccessful =false,
+                        ResponseCode = "400",
+                        ResponseMessage = "Tasks not found",
                     };
 
                 //  CHECK IF THE STATUS IS PART OF WHAT WE HAVE IN OUR ENUM
@@ -196,7 +197,6 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Sorry, you enterred a wrong status",
-                        Data = null
                     };
                 //  CHECK IF THE PRIORITY IS PART OF WHAT WE HAVE IN OUR ENUM
                 if (!Enum.IsDefined(typeof(Priority), request.TaskPriority))
@@ -205,7 +205,6 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Sorry, you enterred a wrong priority",
-                        Data = null
                     };
 
                 var response = new List<TaskResponse>();
@@ -235,9 +234,8 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<IEnumerable<TaskResponse>>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
+                    ResponseCode = "500",
                     ResponseMessage = "Error occured while getting Tasks",
-                    Data = null
                 };
             }
         }
@@ -245,7 +243,7 @@ namespace TaskManager.Infrastructure.Services
         {
             try
             {
-                DateOnly dueDateInDateFormat;
+                DateTime dueDateInDateFormat;
                 string dueDateInStringFormat = task.DueDate.ToString();
                 
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
@@ -254,8 +252,7 @@ namespace TaskManager.Infrastructure.Services
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
-                        ResponseMessage = "Please, enter all fields",
-                        Data = null
+                        ResponseMessage = "Please, enter all required fields",
                     };
 
                 //  CHECK IF THE PRIORITY IS PART OF WHAT WE HAVE IN OUR ENUM.......... AND ENSURE USER CAN NOT SELECT NONE WHILE CREATING
@@ -265,38 +262,50 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Sorry, you enterred a wrong priority",
-                        Data = null
                     };
 
                 //  TRY TO CONVERT THE DATETIME
-                if (!DateOnly.TryParse(dueDateInStringFormat, out dueDateInDateFormat))
+                if (!DateTime.TryParse(dueDateInStringFormat, out dueDateInDateFormat))
                 {
                     return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Please, enter a correct date and time format",
-                        Data = null
                     };
                 }
 
                 //  PREVENT A USER FROM SELECTING A PAST DATE AS DUE DATE
-                if (dueDateInDateFormat < DateOnly.FromDateTime(DateTime.UtcNow))
+                if (dueDateInDateFormat < DateTime.UtcNow)
                 {
                     return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Sorry, you can't select a time from the past",
-                        Data = null
                     };
                 }
 
-                var taskId = Guid.NewGuid();
+                var taskId = Guid.NewGuid().ToString();
+                //  GET CURRENT USER EMAIL AND NAME FROM THE HTTPCONTEXT CLASS
+                var currentUserEmail = _httpContext.HttpContext?.GetSessionUser().Email ?? "";
+                var currentUserName = _httpContext.HttpContext?.GetSessionUser().Name ?? "";
+                var sendRequest = new EmailSenderRequestDto
+                {
+                    email = currentUserEmail,
+                    subject = "Message From Task Manager",
+                    message = "Hello " + currentUserName + ", \n You just created a new task with the ID: " + taskId + " at Time: " + DateTime.UtcNow.ToString()
+                };
 
-                //  SEND EMAIL TO USER
-                Util.SendEmail("kellylambeth93@gmail.com", NotificationType.Status_update.ToString(), "A new task with id: " + taskId.ToString() + " has been assigned to you at time: "+ DateTime.UtcNow.ToString());
-                
+                //  GET THE MAILER URL... WHERE WE WOULD BE SENDING OUR POST REQUEST TO
+                var mailerUrl = $"{_configuration.GetSection("ExternalAPIs")["MailerUrl"]}";
+
+                //  THIS LINE SENDS THE REQUEST TO THE EMAIL SERVER
+                var sendEmailResponse = _httpClient.SendPostEmailAsync<string>(mailerUrl, sendRequest);
+
+                //  WE ARE NOT CHECKING IF IT WAS SUCCESSFUL OR NOT HERE BECAUSE EVEN IT THE EMAIL SERVER FAILS
+                //  THE TASK PROCESS SHOULD CONTINUE (BASE OF THIS APPLICATION REQUIREMENT WE DONT WANT TO MAKE THINGS TOO COMPLICATED)
+
 
                 UserTask taskToSave = new UserTask
                 {
@@ -315,8 +324,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     IsSuccessful = true,
                     ResponseCode = "201",
-                    ResponseMessage = "You just successfully created a new task",
-                    Data = null
+                    ResponseMessage = "New task created successfully",
                 };
             }
             catch (Exception ex)
@@ -324,24 +332,22 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<TaskResponse>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
+                    ResponseCode = "500",
                     ResponseMessage = "Error occured while creating your new Task",
-                    Data = null
                 };
             }
         }
-        public async Task<GenericResponse<TaskResponse>> UpdateTask(string taskIdString, StatusAndPriorityRequest request)
-        {
+        public async Task<GenericResponse<TaskResponse>> UpdateTask(string taskId, StatusAndPriorityRequest request)
+        {       
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
-                if (string.IsNullOrEmpty(taskIdString))
+                if (string.IsNullOrEmpty(taskId))
                     return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
-                        ResponseMessage = "Kindly enter your task Id in the query string",
-                        Data = null
+                        ResponseMessage = "Kindly enter your Task ID in the query string",
                     };
 
                 //  CHECK IF THE STATUS IS PART OF WHAT WE HAVE IN OUR ENUM
@@ -351,7 +357,6 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Sorry, you enterred a wrong status",
-                        Data = null
                     };
                 //  CHECK IF THE PRIORITY IS PART OF WHAT WE HAVE IN OUR ENUM
                 if (!Enum.IsDefined(typeof(Priority), request.TaskPriority))
@@ -360,11 +365,9 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Sorry, you enterred a wrong priority",
-                        Data = null
                     };
 
-                Guid taskIdGuid = new Guid(taskIdString);
-                var checkIfTaskExist = await _repository.TaskRepository.GetTaskByTaskId(taskIdGuid, true);
+                var checkIfTaskExist = await _repository.TaskRepository.GetTaskByTaskId(taskId, true);
                 
                 //  CHECK IF THE TASK EXIST
                 if (checkIfTaskExist == null)
@@ -376,8 +379,8 @@ namespace TaskManager.Infrastructure.Services
                     };
 
                 //  PREVENT USER FROM UPDATING AN OUTDATED TASK
-                DateOnly dueDate = (DateOnly)checkIfTaskExist.DueDate;
-                if (dueDate < DateOnly.FromDateTime(DateTime.UtcNow))
+                DateTime dueDate = checkIfTaskExist.DueDate;
+                if (dueDate < DateTime.UtcNow)
                 {
                     return new GenericResponse<TaskResponse>
                     {
@@ -393,7 +396,24 @@ namespace TaskManager.Infrastructure.Services
                     //  THEN CONFIRM IF THE NEW STATUS IS COMPLETED SO THAT A NOTIFICATION WILL BE SENT OUT
                     if (request.TaskStatus == Status.completed)
                     {
-                        Util.SendEmail("kellylambeth93@gmail.com",NotificationType.Status_update.ToString(), "The task with id: " + checkIfTaskExist.TaskId + " was just completed  at Time: "+ DateTime.UtcNow.ToString());
+                        //  GET CURRENT USER EMAIL AND NAME FROM THE HTTPCONTEXT CLASS
+                        var currentUserEmail = _httpContext.HttpContext?.GetSessionUser().Email ?? "";
+                        var currentUserName = _httpContext.HttpContext?.GetSessionUser().Name ?? "";
+                        var sendRequest = new EmailSenderRequestDto
+                        {
+                            email = currentUserEmail,
+                            subject = "Message From Task Manager",
+                            message = "Hello " + currentUserName + ", \n The task with id: " + checkIfTaskExist.TaskId + " was just completed at Time: " + DateTime.UtcNow.ToString()
+                        };
+                        
+                        //  GET THE MAILER URL... WHERE WE WOULD BE SENDING OUR POST REQUEST TO
+                        var mailerUrl = $"{_configuration.GetSection("ExternalAPIs")["MailerUrl"]}";
+                        
+                        //  THIS LINE SENDS THE REQUEST TO THE EMAIL SERVER
+                        var sendEmailResponse = _httpClient.SendPostEmailAsync<string>(mailerUrl, sendRequest);
+                        
+                        //  WE ARE NOT CHECKING IF IT WAS SUCCESSFUL OR NOT HERE BECAUSE EVEN IT THE EMAIL SERVER FAILS
+                        //  THE TASK PROCESS SHOULD CONTINUE (BASE OF THIS APPLICATION REQUIREMENT WE DONT WANT TO MAKE THINGS TOO COMPLICATED)
                     }
                 }
 
@@ -410,7 +430,6 @@ namespace TaskManager.Infrastructure.Services
                     IsSuccessful = true,
                     ResponseCode = "200",
                     ResponseMessage = "Successfully updated your task in the database",
-                    Data = null
                 };
             }
             catch (Exception ex)
@@ -420,26 +439,24 @@ namespace TaskManager.Infrastructure.Services
                     IsSuccessful = false,
                     ResponseCode = "400",
                     ResponseMessage = "Error occured while saving Tasks",
-                    Data = null
                 };
             }
         }
-        public async Task<GenericResponse<TaskResponse>> DeleteTask(string taskIdString)
+        public async Task<GenericResponse<TaskResponse>> DeleteTask(string taskId)
         {
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
-                if (string.IsNullOrEmpty(taskIdString))
+                if (string.IsNullOrEmpty(taskId))
                     return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Please, enter the task Id",
-                        Data = null
                     };
                 
-                Guid taskIdGuid = new Guid(taskIdString);
-                var checkIfTaskExist = await _repository.TaskRepository.GetTaskByTaskId(taskIdGuid, true);
+                Guid taskIdGuid = new Guid(taskId);
+                var checkIfTaskExist = await _repository.TaskRepository.GetTaskByTaskId(taskId, true);
                 
                 //  CHECK IF THE TASK EXIST
                 if (checkIfTaskExist == null)
@@ -448,7 +465,6 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Task not found",
-                        Data = null
                     };
 
                 _repository.TaskRepository.DeleteTask(checkIfTaskExist);
@@ -459,7 +475,6 @@ namespace TaskManager.Infrastructure.Services
                     IsSuccessful = true,
                     ResponseCode = "200",
                     ResponseMessage = "Successfully deleted your task in the database",
-                    Data = null
                 };
             }
             catch (Exception ex)
@@ -469,7 +484,6 @@ namespace TaskManager.Infrastructure.Services
                     IsSuccessful = false,
                     ResponseCode = "400",
                     ResponseMessage = "Error occured while saving Tasks",
-                    Data = null
                 };
             }
         }

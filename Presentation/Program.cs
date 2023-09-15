@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
-using TaskManager.Application.Repository.Interfaces;
-using TaskManager.Infrastructure.Repositories;
 using TaskManager.Presentation.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,10 +9,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.ConfigureDatabaseContext(builder.Configuration);
 builder.Services.ConfigureRepositoryManager();
 builder.Services.ConfigureServiceManager();
+builder.Services.ConfigureServiceProvider();
 
 
-
-//builder.Services.ConfigureHttpclient();
+builder.Services.ConfigureHttpclient();
 builder.Services.ConfigureAuthentication(builder.Configuration);
 builder.Services.ConfigureAuthorization();
 builder.Services.ConfigureTokenManager();
@@ -22,7 +20,7 @@ builder.Services.AddHttpContextAccessor();
 
 
 builder.Services.AddControllers();
-
+builder.Services.AddHostedService<BackgroundWorkerService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

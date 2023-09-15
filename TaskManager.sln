@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskManager.Domain", "Domai
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskManager.Infrastructure", "Infrastructure\TaskManager.Infrastructure.csproj", "{3634BCD9-3CEB-433E-961A-68513ED75C55}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskManager.Application", "TaskManager.Application\TaskManager.Application.csproj", "{CC5F7359-ECD9-4D2F-A3DE-48B4B8795924}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskManager.Application", "TaskManager.Application\TaskManager.Application.csproj", "{CC5F7359-ECD9-4D2F-A3DE-48B4B8795924}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,23 +1,27 @@
 ﻿using Domain;
 using Domain.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using TaskManager.Application.Repository.Interfaces;
 using TaskManager.Application.Service.Interfaces;
 using TaskManager.Domain.Dtos;
+using TaskManager.Infrastructure.Utilities;
 
 namespace TaskManager.Infrastructure.Services
 {
     public class NotificationService : INotificationService
     {
+        private readonly IConfiguration _configuration;
+        private readonly IHttpClientWrapper _httpClient;
+        private readonly IHttpContextAccessor _httpContext;
         private readonly IRepositoryManager _repository;
 
-        public NotificationService(IRepositoryManager repository)
+        public NotificationService(IRepositoryManager repository, IHttpContextAccessor httpContext, IConfiguration configuration, IHttpClientWrapper httpClient)
         {
-            this._repository = repository;
+            _repository = repository;
+            _httpContext = httpContext;
+            _configuration = configuration;
+            _httpClient = httpClient;
         }
 
         public async Task<GenericResponse<Response>> CreateNotification(CreateNotificationRequest notification)
@@ -43,8 +47,7 @@ namespace TaskManager.Infrastructure.Services
                     };
                 
                 //  CHECK IF TASK EXIST IN DATABASE
-                Guid convertTaskIdToGuid = new Guid(notification.TaskId);
-                var checkIfTaskExist = await _repository.TaskRepository.GetTaskByTaskId(convertTaskIdToGuid, false);
+                var checkIfTaskExist = await _repository.TaskRepository.GetTaskByTaskId(notification.TaskId, false);
                 if (checkIfTaskExist == null)
                     return new GenericResponse<Response>
                     {
@@ -53,9 +56,30 @@ namespace TaskManager.Infrastructure.Services
                         ResponseMessage = "Task not found",
                     };
 
+                //  SEND NOTIFICATION 
+
+                //  GET CURRENT USER EMAIL AND NAME FROM THE HTTPCONTEXT CLASS
+                var currentUserEmail = _httpContext.HttpContext?.GetSessionUser().Email ?? "";
+                var sendRequest = new EmailSenderRequestDto
+                {
+                    email = currentUserEmail,
+                    subject = notification.Type.ToString().Replace('_',' '),
+                    message = notification.Message
+                };
+
+                //  GET THE MAILER URL... WHERE WE WOULD BE SENDING OUR POST REQUEST TO
+                var mailerUrl = $"{_configuration.GetSection("ExternalAPIs")["MailerUrl"]}";
+
+                //  THIS LINE SENDS THE REQUEST TO THE EMAIL SERVER
+                var sendEmailResponse = _httpClient.SendPostEmailAsync<string>(mailerUrl, sendRequest);
+
+                //  WE ARE NOT CHECKING IF IT WAS SUCCESSFUL OR NOT HERE BECAUSE EVEN IT THE EMAIL SERVER FAILS
+                //  THE TASK PROCESS SHOULD CONTINUE (BASE OF THIS APPLICATION REQUIREMENT WE DONT WANT TO MAKE THINGS TOO COMPLICATED)
+
+
                 Notification notificationToSave = new Notification
                 {
-                    NotificationId = Guid.NewGuid(),
+                    NotificationId = Guid.NewGuid().ToString(),
                     TaskId = notification.TaskId,
                     Message = notification.Message,
                     Type = notification.Type == NotificationType.Due_date ? NotificationType.Due_date.ToString() : NotificationType.Status_update.ToString(),
@@ -70,7 +94,6 @@ namespace TaskManager.Infrastructure.Services
                     IsSuccessful = true,
                     ResponseCode = "201",
                     ResponseMessage = "Notification created successfully",
-                    Data = null
                 };
             }
             catch (Exception ex)
@@ -78,9 +101,8 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<Response>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
+                    ResponseCode = "500",
                     ResponseMessage = "Error occured while creating your new notification",
-                    Data = null
                 };
             }
         }
@@ -98,8 +120,7 @@ namespace TaskManager.Infrastructure.Services
                         ResponseMessage = "Please, enter the notification Id",
                     };
 
-                Guid notificationGuid = new Guid(notificationId);
-                var checkIfNotificationExist = await _repository.NotificationRepository.GetByNotificationId(notificationGuid, true);
+                var checkIfNotificationExist = await _repository.NotificationRepository.GetByNotificationId(notificationId, true);
 
                 //  CHECK IF THE NOTIFICATION EXIST
                 if (checkIfNotificationExist == null)
@@ -125,7 +146,7 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<Response>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
+                    ResponseCode = "500",
                     ResponseMessage = "Error occured while deleting your notification",
                 };
             }
@@ -160,18 +181,18 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<IEnumerable<Notification>>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
+                    ResponseCode = "500",
                     ResponseMessage = "Error occured while getting notifications",
                 };
             }
         }
 
-        public async Task<GenericResponse<NotificationDto>> GetByNotificationId(string notificationIdString)
+        public async Task<GenericResponse<NotificationDto>> GetByNotificationId(string notificationId)
         {
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
-                if (string.IsNullOrEmpty(notificationIdString))
+                if (string.IsNullOrEmpty(notificationId))
                     return new GenericResponse<NotificationDto>
                     {
                         IsSuccessful = false,
@@ -180,15 +201,14 @@ namespace TaskManager.Infrastructure.Services
                     };
 
                 // THIS WILL GET ALL NOTIFICATION FROM THE REPOSITORY
-                Guid notificationIdGuid = new Guid(notificationIdString);
-                var getNotificationFromDb = await _repository.NotificationRepository.GetByNotificationId(notificationIdGuid, false);
+                var getNotificationFromDb = await _repository.NotificationRepository.GetByNotificationId(notificationId, false);
 
                 //  CHECK IF USER EXIST
                 if (getNotificationFromDb == null)
                     return new GenericResponse<NotificationDto>
                     {
-                        IsSuccessful = true,
-                        ResponseCode = "200",
+                        IsSuccessful = false,
+                        ResponseCode = "400",
                         ResponseMessage = "Notification not found",
                     };
 
@@ -215,18 +235,18 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<NotificationDto>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
+                    ResponseCode = "500",
                     ResponseMessage = "Error occured while getting your notifcation",
                 };
             }
         }
 
-        public async Task<GenericResponse<Response>> ReadOrUnread(string notificationIdString)
+        public async Task<GenericResponse<Response>> ReadOrUnread(string notificationId)
         {
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
-                if (string.IsNullOrEmpty(notificationIdString))
+                if (string.IsNullOrEmpty(notificationId))
                     return new GenericResponse<Response>
                     {
                         IsSuccessful = false,
@@ -234,8 +254,7 @@ namespace TaskManager.Infrastructure.Services
                         ResponseMessage = "Kindly enter your Notification ID in the query string",
                     };
 
-                Guid notificationIdGuid = new Guid(notificationIdString);
-                var checkIfNotificationExist = await _repository.NotificationRepository.GetByNotificationId(notificationIdGuid, true);
+                var checkIfNotificationExist = await _repository.NotificationRepository.GetByNotificationId(notificationId, true);
 
                 //  CHECK IF THE NOTIFICATION EXIST
                 if (checkIfNotificationExist == null)
@@ -263,7 +282,7 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<Response>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
+                    ResponseCode = "500",
                     ResponseMessage = "Error occured while updating your notification",
                 };
             }

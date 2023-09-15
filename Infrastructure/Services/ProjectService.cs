@@ -1,10 +1,5 @@
 ﻿using Domain;
 using Domain.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TaskManager.Application.Repository.Interfaces;
 using TaskManager.Application.Service.Interfaces;
 using TaskManager.Domain.Dtos;
@@ -61,9 +56,8 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<IEnumerable<ProjectResponse>>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
+                    ResponseCode = "500",
                     ResponseMessage = "Error occured while getting projects",
-                    Data = null
                 };
             }
 
@@ -80,24 +74,20 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Kindly enter all field",
-                        Data = null
                     };
 
                 //  CHECK IF PROJECT EXIST IN DATABASE
-                Guid projectIdGuid = new Guid(projectId);
-                var getProjectFromDb = await _repository.ProjectRepository.GetProjectByProjectId(projectIdGuid, true);
+                var getProjectFromDb = await _repository.ProjectRepository.GetProjectByProjectId(taskId, true);
                 if (getProjectFromDb == null)
                     return new GenericResponse<ProjectResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Project not exist",
-                        Data = null
                     };
 
                 //  CHECK IF TASK EXIST IN DATABASE
-                Guid taskIdGuid = new Guid(taskId);
-                var checkIfTaskExistInUserTaskDb = await _repository.TaskRepository.GetTaskByTaskId(taskIdGuid, false);
+                var checkIfTaskExistInUserTaskDb = await _repository.TaskRepository.GetTaskByTaskId(taskId, false);
 
                 if (checkIfTaskExistInUserTaskDb == null)
                 {
@@ -106,13 +96,12 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "The task you just assigned does not exist",
-                        Data = null
                     };
                 }
                 else
                 {
                     //  TRANSFER ALL CURRENT TASKS IN THE PROJECT INTO A NEW VARIABLE SO IT WILL BE MANIPULATED EASILY
-                    List<UserTask> getProjectTasks = (List<UserTask>)await _repository.TaskRepository.GetTasksByProjectId(projectIdGuid, true);
+                    List<UserTask> getProjectTasks = (List<UserTask>)await _repository.TaskRepository.GetTasksByProjectId(projectId, true);
                     
                     //  THIS CONDITION WILL CHECK IF WE NEED TO ADD OR DELETE THE TASK
                     if (operation == AddOrDelete.Add)
@@ -162,7 +151,6 @@ namespace TaskManager.Infrastructure.Services
                     IsSuccessful = true,
                     ResponseCode = "200",
                     ResponseMessage = "Your project tasks have been successfully updated",
-                    Data = null
                 };
             }
             catch(Exception ex)
@@ -170,9 +158,8 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<ProjectResponse>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
+                    ResponseCode = "500",
                     ResponseMessage = "Error occured while adding new task to this project",
-                    Data = null
                 };
             }
         }
@@ -188,7 +175,6 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Please, enter all fields",
-                        Data = null
                     };
 
                 //  CHECK IF PROJECT ALREADY EXIST
@@ -199,13 +185,12 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Sorry, project already exist",
-                        Data = null
                     };
 
                 //  CHECK PROJECT OBJECT WHICH WE WILL SEND TO THE DATABASE BEFORE THE PROJECT MODEL IS OUR ENTITY
                 Project projectToSave = new Project
                 {
-                    ProjectId = Guid.NewGuid(),
+                    ProjectId = Guid.NewGuid().ToString(),
                     Name = project.Name,
                     Description = project.Description,
                 };
@@ -217,7 +202,6 @@ namespace TaskManager.Infrastructure.Services
                     IsSuccessful = true,
                     ResponseCode = "201",
                     ResponseMessage = "You just successfully created a new project",
-                    Data = null
                 };
             }
             catch (Exception ex)
@@ -225,9 +209,8 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<ProjectResponse>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
+                    ResponseCode = "500",
                     ResponseMessage = "Error occured while creating your new project",
-                    Data = null
                 };
             }
         }
@@ -243,11 +226,9 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Please, enter the project Id",
-                        Data = null
                     };
 
-                Guid projectIdGuid = new Guid(projectId);
-                var checkIfProjectExist = await _repository.ProjectRepository.GetProjectByProjectId(projectIdGuid, true);
+                var checkIfProjectExist = await _repository.ProjectRepository.GetProjectByProjectId(projectId, true);
 
                 //  CHECK IF THE PROJECT EXIST
                 if (checkIfProjectExist == null)
@@ -256,7 +237,6 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Project not found",
-                        Data = null
                     };
 
                 _repository.ProjectRepository.DeleteProject(checkIfProjectExist);
@@ -267,7 +247,6 @@ namespace TaskManager.Infrastructure.Services
                     IsSuccessful = true,
                     ResponseCode = "200",
                     ResponseMessage = "Successfully deleted your project from the database",
-                    Data = null
                 };
             }
             catch (Exception ex)
@@ -275,19 +254,18 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<ProjectResponse>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
+                    ResponseCode = "500",
                     ResponseMessage = "Error occured while deleting your project",
-                    Data = null
                 };
             }
         }
 
-        public async Task<GenericResponse<ProjectDto>> GetProjectByProjectId(string projectIdString)
+        public async Task<GenericResponse<ProjectDto>> GetProjectByProjectId(string projectId)
         {
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
-                if (string.IsNullOrEmpty(projectIdString))
+                if (string.IsNullOrEmpty(projectId))
                     return new GenericResponse<ProjectDto>
                     {
                         IsSuccessful = false,
@@ -296,20 +274,19 @@ namespace TaskManager.Infrastructure.Services
                     };
 
                 // THIS WILL GET ALL TASKS FROM THE REPOSITORY
-                Guid projectIdGuid = new Guid(projectIdString);
-                var responseFromDb = await _repository.ProjectRepository.GetProjectByProjectId(projectIdGuid, false);
+                var responseFromDb = await _repository.ProjectRepository.GetProjectByProjectId(projectId, false);
 
                 //  CHECK IF PROJECT EXIST
                 if (responseFromDb == null)
                     return new GenericResponse<ProjectDto>
                     {
-                        IsSuccessful = true,
-                        ResponseCode = "200",
+                        IsSuccessful = false,
+                        ResponseCode = "400",
                         ResponseMessage = "Project not found",
                     };
 
                 //  FETCH ALL ASSIGNED TASKED BASED OF THE PRODUCT ID WHICH IS OUR FOREIGN KEY
-                var getAssignedTasks = await _repository.TaskRepository.GetTasksByProjectId(projectIdGuid, false);
+                var getAssignedTasks = await _repository.TaskRepository.GetTasksByProjectId(projectId, false);
                 
                 //  MAP THE REQUIRED DATA WE NEED THE USERS TO SEE INTO A NEW DTO WHICH IS THE TASKDTO FOR THE RESPONSE
                 List<TaskDto> assignedTasksDto = new List<TaskDto>();
@@ -325,7 +302,7 @@ namespace TaskManager.Infrastructure.Services
                     });
                 }
 
-                //  THIS IS THE RESPONSE DATA TO SEND BACK TO OUR CONSUMER
+                //  THIS IS THE R   ESPONSE DATA TO SEND BACK TO OUR CONSUMER
                 var response = new ProjectDto()
                 {
                     Name = responseFromDb.Name, 
@@ -346,28 +323,26 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<ProjectDto>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
+                    ResponseCode = "500",
                     ResponseMessage = "Error occured while getting your project",
                 };
             }
         }
 
-        public async Task<GenericResponse<ProjectResponse>> UpdateProject(string projectIdString, CreateProjectRequest request)
+        public async Task<GenericResponse<ProjectResponse>> UpdateProject(string projectId, CreateProjectRequest request)
         {
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
-                if (string.IsNullOrEmpty(projectIdString))
+                if (string.IsNullOrEmpty(projectId))
                     return new GenericResponse<ProjectResponse>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Kindly enter your project Id in the query string",
-                        Data = null
                     };
 
-                Guid projectIdGuid = new Guid(projectIdString);
-                var checkIfProjectExist = await _repository.ProjectRepository.GetProjectByProjectId(projectIdGuid, true);
+                var checkIfProjectExist = await _repository.ProjectRepository.GetProjectByProjectId(projectId, true);
 
                 //  CHECK IF THE TASK EXIST
                 if (checkIfProjectExist == null)
@@ -376,7 +351,6 @@ namespace TaskManager.Infrastructure.Services
                         IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Project not found",
-                        Data = null
                     };
 
                 checkIfProjectExist.Name = request.Name;
@@ -390,7 +364,6 @@ namespace TaskManager.Infrastructure.Services
                     IsSuccessful = true,
                     ResponseCode = "200",
                     ResponseMessage = "Successfully updated your project in the database",
-                    Data = null
                 };
             }
             catch (Exception ex)
@@ -398,9 +371,8 @@ namespace TaskManager.Infrastructure.Services
                 return new GenericResponse<ProjectResponse>
                 {
                     IsSuccessful = false,
-                    ResponseCode = "400",
+                    ResponseCode = "500",
                     ResponseMessage = "Error occured while updating your project",
-                    Data = null
                 };
             }
         }

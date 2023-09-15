@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using TaskManager.Application.Repository.Interfaces;
 using TaskManager.Application.Service.Interfaces;
@@ -27,14 +26,18 @@ namespace TaskManager.Presentation.Controllers
         public async Task<ActionResult> GetAll()
         {
             var response = await _serviceManager.UserService.GetAllUsers();
-            return Ok(response);
+            if(response.IsSuccessful)
+                return Ok(response);
+            return BadRequest(response);
         }
 
         [HttpGet("getUserById")]
         public async Task<ActionResult> GetUserById([FromQuery] string userId)
         {
             var response = await _serviceManager.UserService.GetByUserId(userId);
-            return Ok(response);
+            if (response.IsSuccessful)
+                return Ok(response);
+            return BadRequest(response);
         }
 
         [AllowAnonymous]
@@ -58,7 +61,7 @@ namespace TaskManager.Presentation.Controllers
                 
                 return Ok(userLogin);
             }
-            return Ok(userLogin);
+            return BadRequest(userLogin);
         }
 
         [AllowAnonymous]
@@ -66,7 +69,9 @@ namespace TaskManager.Presentation.Controllers
         public async Task<ActionResult> AddUser(RegisterDto project)
         {
             var response = await _serviceManager.UserService.CreateUser(project);
-            return Ok(response);
+            if (response.IsSuccessful)
+                return Ok(response);
+            return BadRequest(response);
         }
 
         [AllowAnonymous]
@@ -77,8 +82,7 @@ namespace TaskManager.Presentation.Controllers
             var result = await _serviceManager.UserService.RefreshToken(request);
             if (result.ResponseCode == "00")
             {
-                var convertUserIdToGuid = new Guid(request.UserId);
-                var loggedInUser = await _repositoryManager.UserRepository.GetByUserId(convertUserIdToGuid, true);
+                var loggedInUser = await _repositoryManager.UserRepository.GetByUserId(request.UserId, true);
                 loggedInUser.AccessToken = result.Data.AccessToken;
                 loggedInUser.RefreshToken = result.Data.RefreshToken;
                 loggedInUser.TokenGenerationTime = DateTime.UtcNow;
@@ -86,28 +90,34 @@ namespace TaskManager.Presentation.Controllers
                 await _repositoryManager.SaveAsync();
                 return Ok(result);
             }
-            return Ok(result);
+            return BadRequest(result);
         }
 
         [HttpPatch("updateUser")]
         public async Task<ActionResult> UpdateUser([FromQuery] string userId, [FromBody] UpdateUserRequest user)
         {
             var response = await _serviceManager.UserService.UpdateUser(userId, user);
-            return Ok(response);
+            if (response.IsSuccessful)
+                return Ok(response);
+            return BadRequest(response);
         }
 
         [HttpDelete("DeleteUser")]
         public async Task<ActionResult> DeleteUser([FromQuery] string userId)
         {
             var response = await _serviceManager.UserService.DeleteUser(userId);
-            return Ok(response);
+            if (response.IsSuccessful)
+                return Ok(response);
+            return BadRequest(response);
         }
 
         [HttpPatch("assignTask")]
         public async Task<ActionResult> AssignUser([FromQuery] string userId, [FromBody] AssignTaskRequest request)
         {
             var response = await _serviceManager.UserService.AssignTask(userId, request.Operation, request.TaskId);
-            return Ok(response);
+            if (response.IsSuccessful)
+                return Ok(response);
+            return BadRequest(response);
         }
     }
 }

@@ -1,11 +1,6 @@
 ﻿using Domain.Models;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TaskManager.Application.Repository.Interfaces;
 
 namespace TaskManager.Infrastructure.Repositories
@@ -21,6 +16,7 @@ namespace TaskManager.Infrastructure.Repositories
         public void UpdateNotification(Notification notification) => Update(notification);
         public void DeleteNotification(Notification notification) => Delete(notification);
         public async Task<List<Notification>> GetNotifications() => await FindAll(false).ToListAsync();
-        public async Task<Notification> GetByNotificationId(Guid notificationId, bool trackChanges) => await FindByCondition(x => x.NotificationId.Equals(notificationId), trackChanges).FirstOrDefaultAsync();
+        public async Task<Notification> GetByNotificationId(string notificationId, bool trackChanges) => await FindByCondition(x => x.NotificationId.Equals(notificationId), trackChanges).FirstOrDefaultAsync();
+        public async Task<Notification> GetByNotificationIdAndUserId(string taskId, string userId, bool trackChanges) => await FindByCondition(x => x.TaskId.Equals(taskId) && x.RecievedUserId.Equals(userId), trackChanges).FirstOrDefaultAsync();
     }
 }

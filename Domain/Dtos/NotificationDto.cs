@@ -1,6 +1,4 @@
-﻿using Domain;
-
-namespace TaskManager.Domain.Dtos
+﻿namespace TaskManager.Domain.Dtos
 {
     public class NotificationDto
     {

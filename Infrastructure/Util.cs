@@ -1,15 +1,16 @@
 ﻿using Domain.Models;
-using System.Net;
-using System.Net.Mail;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using TaskManager.Domain.Dtos;
 
 namespace TaskManager.Infrastructure
 {
     public static class Util
     {
-        public static DateOnly GetLastDayOfCurrentWeek()
+        public static DateTime GetLastDayOfCurrentWeek()
         {
             var currentDay = DateTime.UtcNow.DayOfWeek.ToString();
             var curentDate = DateTime.UtcNow;
@@ -40,7 +41,7 @@ namespace TaskManager.Infrastructure
                     curentDate = DateTime.UtcNow;
                     break;
             }
-            return DateOnly.FromDateTime(curentDate);
+            return curentDate;
         }
 
         //  THIS METHOD HELPS TO CHECK IF LIST OF USERTASK OBJECTS CONTAINS A USERTASK OBJECT 
@@ -79,33 +80,53 @@ namespace TaskManager.Infrastructure
             }
         }
 
+        private static string GetClaimValue(this IEnumerable<Claim> claims, string claimType) => new List<Claim>(claims).Find((Predicate<Claim>)(c => c.Type == claimType))?.Value;
 
-        public static void SendEmail(string email, string type, string input_message)
+        public static TokenUserData GetSessionUser(this HttpContext context)
         {
-            try
+            var data = new TokenUserData();
+
+            string str1;
+            if (context == null)
             {
-                
-                //var subject = type.Replace('_',' '); var template = input_message;
-                //MailMessage message = new MailMessage();
-                //SmtpClient smtp = new SmtpClient();
-                //message.From = new MailAddress("mail@autoarbs.com");
-                //message.To.Add(new MailAddress(email));
-                //message.Subject = subject;
-                //message.IsBodyHtml = true; //to make message body as html  
-                //message.Body = template;
-                ////message.Body = "Your OTP code is "+otp;
-                //smtp.Port = 587;
-                //smtp.Host = "smtp.gmail.com"; //for gmail host  
-                //smtp.EnableSsl = true;
-                //smtp.UseDefaultCredentials = false;
-                //smtp.Credentials = new NetworkCredential("autoarbs.mail@gmail.com", "jvvwqviukumwtwtm");
-                //smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
-                //smtp.Send(message);
+                data = null;
             }
-            catch (Exception)
+            else
             {
-                
+                ClaimsPrincipal user = context.User;
+                if (user == null)
+                {
+                    str1 = (string)null;
+                }
+                else
+                {
+                    IEnumerable<Claim> claims = user.Claims;
+
+                    data.UserId = claims != null ? claims.GetClaimValue("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier") : (string)null;
+                    data.Email = claims != null ? claims.GetClaimValue("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress") : (string)null;
+                    data.Name = claims != null ? claims.GetClaimValue("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name") : (string)null;
+                }
             }
+
+            return data;
+        }
+
+
+        public static bool IsDateDue(DateTime startTime)
+        {
+            DateTime endTime = DateTime.UtcNow;
+            TimeSpan span = endTime.Subtract(startTime);
+
+            int totalHours = 0;
+            if (span.Days > 0)
+                totalHours = 24 * span.Days;
+            if (span.Hours > 0)
+                totalHours = totalHours + span.Hours;
+
+            //  IT SHOULD ONLY SELECT 47 AND 48 HOURS... WE DON'T WANT TO MAKE THE RANGE TOO WIDE
+            if (totalHours >= 47 && totalHours < 49)
+                return true;
+            return false;
         }
     }
 }
