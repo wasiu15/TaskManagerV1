@@ -55,6 +55,11 @@ namespace TaskManager.Infrastructure
             return false;
         }
 
+        public static bool IsInputLetterOnly(string inputString)
+        {
+            return inputString.All(c => Char.IsLetter(c));
+        }
+
         public static bool EmailIsValid(string email)
         {
             return Regex.IsMatch(email, @"^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$");
