@@ -32,6 +32,7 @@ namespace TaskManager.Infrastructure.Repositories
         public void UpdateProjectTask(ProjectUserTask projectTaskDto) => Update(projectTaskDto);
 
         public async Task<IEnumerable<ProjectUserTask>> GetByTaskId(string taskId, bool trackChanges) => await FindByCondition(x => x.UserTaskId.Equals(taskId), trackChanges).ToListAsync();
+        public async Task<IEnumerable<ProjectUserTask>> GetByProjectId(string projectId, bool trackChanges) => await FindByCondition(x => x.ProjectId.Equals(projectId), trackChanges).ToListAsync();
         public async Task<ProjectUserTask> GetByProjectIdAndTaskId(string projectId, string taskId, bool trackChanges) => await FindByCondition(x => x.ProjectId.Equals(projectId) && x.UserTaskId.Equals(taskId), trackChanges).FirstOrDefaultAsync();
         
         public async void DeleteProjectTaskByProjectId(string projectId)

@@ -54,7 +54,7 @@ namespace TaskManager.Presentation.Controllers
             return BadRequest(response);
         }
 
-        [HttpDelete("DeleteUser")]
+        [HttpDelete("DeleteNotification")]
         public async Task<ActionResult> DeleteNotification([FromQuery] string notificationId)
         {
             var response = await _serviceManager.NotificationService.DeleteNotification(notificationId);

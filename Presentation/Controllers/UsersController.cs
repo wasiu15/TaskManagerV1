@@ -80,7 +80,7 @@ namespace TaskManager.Presentation.Controllers
         public async Task<IActionResult> RefreshToken(RefreshTokenDto request)
         {
             var result = await _serviceManager.UserService.RefreshToken(request);
-            if (result.ResponseCode == "00")
+            if (result.IsSuccessful)
             {
                 var loggedInUser = await _repositoryManager.UserRepository.GetByUserId(request.UserId, true);
                 loggedInUser.AccessToken = result.Data.AccessToken;

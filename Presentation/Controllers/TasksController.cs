@@ -68,7 +68,7 @@ namespace TaskManager.Presentation.Controllers
             return BadRequest(response);
         }
 
-        [HttpPost("addTask")]
+        [HttpPost("createTask")]
         public async Task<ActionResult> AddTask(CreateTaskRequest task)
         {
             var response = await _serviceManager.TaskService.CreateTask(task);

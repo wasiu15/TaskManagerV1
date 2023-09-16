@@ -357,6 +357,7 @@ namespace TaskManager.Infrastructure.Services
 
                 var currentUserId = _httpContext.HttpContext?.GetSessionUser().UserId ?? "";
 
+                //  SAVE TO TASK TABLE
                 UserTask taskToSave = new UserTask
                 {
                     Id = Guid.NewGuid().ToString(),
@@ -368,6 +369,22 @@ namespace TaskManager.Infrastructure.Services
                     Status = Status.Pending,
                 };
                 _repository.TaskRepository.CreateTask(taskToSave);
+
+
+                //  SAVE TO NOTIFICATION TABLE
+                Notification notificationToSave = new Notification
+                {
+                    NotificationId = Guid.NewGuid().ToString(),
+                    TaskId = taskToSave.Id,
+                    RecievedUserId = currentUserId,
+                    Type = NotificationType.Status_update.ToString(),
+                    Message = sendRequest.message,
+                    ReadStatus = NotificationStatus.Unread.ToString(),
+                    Time = DateTime.UtcNow,
+                };
+                _repository.NotificationRepository.CreateNotification(notificationToSave);
+
+
                 await _repository.SaveAsync();
 
                 //  CREATE RESPONSE TO SEND OUT
@@ -474,9 +491,22 @@ namespace TaskManager.Infrastructure.Services
                         
                         //  THIS LINE SENDS THE REQUEST TO THE EMAIL SERVER
                         var sendEmailResponse = _httpClient.SendPostEmailAsync<string>(mailerUrl, sendRequest);
-                        
+
                         //  WE ARE NOT CHECKING IF IT WAS SUCCESSFUL OR NOT HERE BECAUSE EVEN IT THE EMAIL SERVER FAILS
                         //  THE TASK PROCESS SHOULD CONTINUE (BASE OF THIS APPLICATION REQUIREMENT WE DONT WANT TO MAKE THINGS TOO COMPLICATED)
+
+                        var currentUserId = _httpContext.HttpContext?.GetSessionUser().UserId ?? "";
+                        Notification notificationToSave = new Notification
+                        {
+                            NotificationId = Guid.NewGuid().ToString(),
+                            TaskId = checkIfTaskExist.Id,
+                            RecievedUserId = currentUserId,
+                            Message = sendRequest.message,
+                            Type = NotificationType.Status_update.ToString(),
+                            ReadStatus = NotificationStatus.Unread.ToString(),
+                            Time = DateTime.UtcNow
+                        };
+                        _repository.NotificationRepository.CreateNotification(notificationToSave);
                     }
                 }
 
@@ -538,7 +568,7 @@ namespace TaskManager.Infrastructure.Services
                     //  DELETE FOREIGN KEY(S) FIRST
                     _repository.ProjectTaskRepository.DeleteProjectUserTasks(listOfRelatedProjectUserTasks);
                 }
-
+                 
                 //  DELETE FROM TASK DATABASE
                 _repository.TaskRepository.DeleteTask(checkIfTaskExist);
                 await _repository.SaveAsync();

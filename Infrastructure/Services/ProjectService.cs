@@ -3,6 +3,7 @@ using TaskManager.Domain.Models;
 using TaskManager.Application.Repository.Interfaces;
 using TaskManager.Application.Service.Interfaces;
 using TaskManager.Domain.Dtos;
+using System.Threading.Tasks;
 
 namespace TaskManager.Infrastructure.Services
 {
@@ -133,7 +134,7 @@ namespace TaskManager.Infrastructure.Services
                         if (checkIfForeignKeyExist != null)
                         {
                             //  ADD THE NEW TASK TO THE ARRAY AND SAVE TO THE DB
-                            _repository.ProjectTaskRepository.DeleteProjectTask(projectUserTask);
+                            _repository.ProjectTaskRepository.DeleteProjectTask(checkIfForeignKeyExist);
                         }
                         else
                         {
@@ -244,10 +245,17 @@ namespace TaskManager.Infrastructure.Services
                         ResponseMessage = "Project not found",
                     };
 
+                //  CHECK IF THIS PROJECT IS RELATED TO ANY TASK
+                var listOfRelatedTasksByProjectId = await _repository.ProjectTaskRepository.GetByProjectId(projectId, true);
+                //  DELETE FOREIGN KEYS IF FOUND
+                if (listOfRelatedTasksByProjectId != null)
+                {
+                    //  DELETE FOREIGN KEY(S) FROM DATABASE
+                    _repository.ProjectTaskRepository.DeleteProjectUserTasks(listOfRelatedTasksByProjectId);
+                }
+                
                 //  DELETE FROM PROJECT DATABASE
                 _repository.ProjectRepository.DeleteProject(checkIfProjectExist);
-                //  DELETE FOREIGN KEY(S)
-                _repository.ProjectTaskRepository.DeleteProjectTaskByProjectId(projectId);
                 await _repository.SaveAsync();
 
                 return new GenericResponse<ProjectResponse>
@@ -268,13 +276,13 @@ namespace TaskManager.Infrastructure.Services
             }
         }
 
-        public async Task<GenericResponse<ProjectDto>> GetProjectByProjectId(string projectId)
+        public async Task<GenericResponse<List<TaskResponse>>> GetProjectByProjectId(string projectId)
         {
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
                 if (string.IsNullOrEmpty(projectId))
-                    return new GenericResponse<ProjectDto>
+                    return new GenericResponse<List<TaskResponse>>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -285,7 +293,7 @@ namespace TaskManager.Infrastructure.Services
                 var responseFromDb = await _repository.ProjectRepository.GetProjectByProjectId(projectId, false);
                 //  CHECK IF PROJECT EXIST
                 if (responseFromDb == null)
-                    return new GenericResponse<ProjectDto>
+                    return new GenericResponse<List<TaskResponse>>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -296,7 +304,7 @@ namespace TaskManager.Infrastructure.Services
                 var getAssignedTasksIds = await _repository.ProjectTaskRepository.GetTaskIdsFromProjectId(projectId);
                 if (getAssignedTasksIds == null)
                 {
-                    return new GenericResponse<ProjectDto>
+                    return new GenericResponse<List<TaskResponse>>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -308,7 +316,7 @@ namespace TaskManager.Infrastructure.Services
                 var assignedTasks = await _repository.TaskRepository.GetTasksByArrayOfTaskIds(getAssignedTasksIds.ToList(), false);
                 if(assignedTasks == null)
                 {
-                    return new GenericResponse<ProjectDto>
+                    return new GenericResponse<List<TaskResponse>>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -317,38 +325,32 @@ namespace TaskManager.Infrastructure.Services
                 }
 
                 //  MAP THE REQUIRED DATA WE NEED THE USERS TO SEE INTO A NEW DTO WHICH IS THE TASKDTO FOR THE RESPONSE
-                List<TaskDto> assignedTasksDto = new List<TaskDto>();
+                List<TaskResponse> assignedTasksResponse = new List<TaskResponse>();
                 foreach (var task in assignedTasks)
                 {
-                    assignedTasksDto.Add(new TaskDto
+                    assignedTasksResponse.Add(new TaskResponse
                     {
+                        Id = task.Id,
                         Title = task.Title,
                         Description = task.Description,
-                        DueDate = task.DueDate,
-                        Priority = task.Priority,
-                        Status = task.Status
+                        DueDate = task.DueDate.ToShortDateString(),
+                        Priority = task.Priority.ToString(),
+                        Status = task.Status.ToString()
                     });
                 }
 
-                //  THIS IS THE RESPONSE DATA TO SEND BACK TO OUR CONSUMER
-                var response = new ProjectDto()
-                {
-                    Name = responseFromDb.Name, 
-                    Description = responseFromDb.Description,
-                    AssociatedTasks = assignedTasksDto.ToArray()
-                };
 
-                return new GenericResponse<ProjectDto>
+                return new GenericResponse<List<TaskResponse>>
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
-                    ResponseMessage = "Successfully fetched project and the total tasks attached is: "+ assignedTasksDto.Count(),
-                    Data = response
+                    ResponseMessage = "Successfully fetched project and the total tasks attached is: "+ assignedTasksResponse.Count(),
+                    Data = assignedTasksResponse
                 };
             }
             catch (Exception ex)
             {
-                return new GenericResponse<ProjectDto>
+                return new GenericResponse<List<TaskResponse>>
                 {
                     IsSuccessful = false,
                     ResponseCode = "500",
