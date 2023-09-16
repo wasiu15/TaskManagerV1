@@ -1,5 +1,5 @@
 ﻿using Domain;
-using Domain.Models;
+using TaskManager.Domain.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using TaskManager.Application.Repository.Interfaces;

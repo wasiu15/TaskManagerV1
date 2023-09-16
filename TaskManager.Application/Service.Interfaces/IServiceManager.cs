@@ -1,4 +1,6 @@
-﻿namespace TaskManager.Application.Service.Interfaces
+﻿using TaskManager.Application.Repository.Interfaces;
+
+namespace TaskManager.Application.Service.Interfaces
 {
     public interface IServiceManager
     {
@@ -6,5 +8,6 @@
         IProjectService ProjectService { get; }
         IUserService UserService { get; }
         INotificationService NotificationService { get; }
+        IProjectTaskService ProjectTaskService { get; }
     }
 }

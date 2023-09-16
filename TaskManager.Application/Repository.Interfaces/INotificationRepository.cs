@@ -1,4 +1,4 @@
-﻿using Domain.Models;
+﻿using TaskManager.Domain.Models;
 
 namespace TaskManager.Application.Repository.Interfaces
 {

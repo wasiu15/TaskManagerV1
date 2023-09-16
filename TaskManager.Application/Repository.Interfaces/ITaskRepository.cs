@@ -1,5 +1,5 @@
 ﻿using Domain;
-using Domain.Models;
+using TaskManager.Domain.Models;
 
 namespace TaskManager.Application.Repository.Interfaces
 {
@@ -12,8 +12,9 @@ namespace TaskManager.Application.Repository.Interfaces
         Task<IEnumerable<UserTask>> GetTasksDueThisWeek(DateTime todayDate, DateTime lastDayOfCurrentWeek, bool trackChanges);
         Task<IEnumerable<UserTask>> GetTasks();
         Task<IEnumerable<UserTask>> GetTasksByStatusOrPriority(Status status, Priority priority, bool trackChanges);
-        Task<IEnumerable<UserTask>> GetTasksByProjectId(string projectId, bool trackChanges);
+        //Task<IEnumerable<UserTask>> GetTasksByProjectId(string projectId, bool trackChanges);
         Task<IEnumerable<UserTask>> GetTasksByUserId(string userId, bool trackChanges);
         Task<IEnumerable<UserTask>> GetAnyUnCompletedTaskToDueInTwoDays(bool trackChanges);
+        Task<IEnumerable<UserTask>> GetTasksByArrayOfTaskIds(List<string> taskId, bool trackChanges);
     }
 }

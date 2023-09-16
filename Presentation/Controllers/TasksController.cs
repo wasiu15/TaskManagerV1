@@ -1,4 +1,5 @@
 ﻿using Domain;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskManager.Application.Service.Interfaces;
 using TaskManager.Domain.Dtos;
@@ -7,7 +8,7 @@ namespace TaskManager.Presentation.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
 
     public class TasksController : ControllerBase
     {
@@ -21,6 +22,15 @@ namespace TaskManager.Presentation.Controllers
         public async Task<ActionResult> GetAll()
         {
             var response = await _serviceManager.TaskService.GetAllTasks();
+            if (response.IsSuccessful)
+                return Ok(response);
+            return BadRequest(response);
+        }
+
+        [HttpGet("getAllUserTasks")]
+        public async Task<ActionResult> GetAllUserTasks()
+        {
+            var response = await _serviceManager.TaskService.GetAllTasksByUserId();
             if (response.IsSuccessful)
                 return Ok(response);
             return BadRequest(response);

@@ -1,5 +1,5 @@
 ﻿using Domain;
-using Domain.Models;
+using TaskManager.Domain.Models;
 using TaskManager.Application.Repository.Interfaces;
 using TaskManager.Application.Service.Interfaces;
 using TaskManager.Domain.Dtos;
@@ -417,7 +417,7 @@ namespace TaskManager.Infrastructure.Services
                         if (Util.IsListContainTask(getUserTasks, checkIfTaskExistInUserTaskDb))
                         {
                             //  ADD THE NEW TASK TO THE ARRAY AND SAVE TO THE DB
-                            getUserTasks.RemoveAll(x => x.TaskId == checkIfTaskExistInUserTaskDb.TaskId);
+                            getUserTasks.RemoveAll(x => x.Id == checkIfTaskExistInUserTaskDb.Id);
                         }
                         else
                         {

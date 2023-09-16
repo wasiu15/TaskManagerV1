@@ -1,0 +1,46 @@
+﻿using Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TaskManager.Application.Repository.Interfaces;
+using TaskManager.Domain.Dtos;
+using TaskManager.Domain.Models;
+
+namespace TaskManager.Infrastructure.Repositories
+{
+    public class ProjectTaskRepository : RepositoryBase<ProjectUserTask>, IProjectTaskRepository
+    {
+        public ProjectTaskRepository(RepositoryContext context) : base(context)
+        {
+
+        }
+        public void CreateProjectTask(ProjectUserTask projectTaskDto) => Create(projectTaskDto);
+
+        public void DeleteProjectTask(ProjectUserTask projectTaskDto) => Delete(projectTaskDto);
+
+        public void UpdateProjectTask(ProjectUserTask projectTaskDto) => Update(projectTaskDto);
+
+        public async Task<ProjectUserTask> GetByProjectIdAndTaskId(string projectId, string taskId, bool trackChanges) => await FindByCondition(x => x.ProjectId.Equals(projectId) && x.UserTaskId.Equals(taskId), trackChanges).FirstOrDefaultAsync();
+        
+        public async void DeleteProjectTaskByProjectId(string projectId)
+        {
+            var data = await FindByCondition(x => x.ProjectId.Equals(projectId), true).ToListAsync();
+            data.ForEach(x => Delete(x));
+        }
+
+        public async void DeleteProjectTaskByTaskId(string taskId)
+        {
+            var data = await FindByCondition(x => x.UserTaskId.Equals(taskId), true).ToListAsync();
+            data.ForEach(x => Delete(x));
+        }
+
+        public async Task<IEnumerable<string>> GetTaskIdsFromProjectId(string projectId)
+        {
+            var data = await FindByCondition(x => x.ProjectId.Equals(projectId), true).Select(x => x.UserTaskId).ToListAsync();
+            return data;
+        }
+    }
+}

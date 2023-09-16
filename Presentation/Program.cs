@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.ConfigureDatabaseContext(builder.Configuration);
 builder.Services.ConfigureRepositoryManager();
 builder.Services.ConfigureServiceManager();
-builder.Services.ConfigureServiceProvider();
+//builder.Services.ConfigureServiceProvider();
 
 
 builder.Services.ConfigureHttpclient();
@@ -20,7 +20,7 @@ builder.Services.AddHttpContextAccessor();
 
 
 builder.Services.AddControllers();
-builder.Services.AddHostedService<BackgroundWorkerService>();
+//builder.Services.AddHostedService<BackgroundWorkerService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

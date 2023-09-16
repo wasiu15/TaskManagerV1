@@ -1,6 +1,5 @@
-﻿using Domain.Models;
-using Infrastructure.Repositories.Configuration;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using TaskManager.Domain.Models;
 
 namespace Infrastructure.Repositories
 {
@@ -11,12 +10,17 @@ namespace Infrastructure.Repositories
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.ApplyConfiguration(new TaskConfiguration());
+            //modelBuilder.ApplyConfiguration(new TaskConfiguration());
+
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<ProjectUserTask>().HasKey(i => new { i.ProjectId, i.UserTaskId });
         }
 
-        public DbSet<UserTask>? Tasks { get; set; }
+        public DbSet<UserTask>? UserTasks { get; set; }
         public DbSet<Project>? Projects { get; set; }
         public DbSet<User>? Users { get; set; }
         public DbSet<Notification>? Notifications { get; set; }
+        public DbSet<ProjectUserTask>? ProjectUserTasks { get; set; }
     }
 }

@@ -1,5 +1,5 @@
 ﻿using Domain;
-using Domain.Models;
+using TaskManager.Domain.Models;
 using TaskManager.Application.Repository.Interfaces;
 using TaskManager.Application.Service.Interfaces;
 using TaskManager.Domain.Dtos;
@@ -37,7 +37,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     response.Add(new ProjectResponse()
                     {
-                        Id = project.ProjectId.ToString(),
+                        Id = project.Id.ToString(),
                         Name = project.Name,
                         Description = project.Description
                     });
@@ -77,7 +77,7 @@ namespace TaskManager.Infrastructure.Services
                     };
 
                 //  CHECK IF PROJECT EXIST IN DATABASE
-                var getProjectFromDb = await _repository.ProjectRepository.GetProjectByProjectId(taskId, true);
+                var getProjectFromDb = await _repository.ProjectRepository.GetProjectByProjectId(projectId, true);
                 if (getProjectFromDb == null)
                     return new GenericResponse<ProjectResponse>
                     {
@@ -100,35 +100,40 @@ namespace TaskManager.Infrastructure.Services
                 }
                 else
                 {
-                    //  TRANSFER ALL CURRENT TASKS IN THE PROJECT INTO A NEW VARIABLE SO IT WILL BE MANIPULATED EASILY
-                    List<UserTask> getProjectTasks = (List<UserTask>)await _repository.TaskRepository.GetTasksByProjectId(projectId, true);
-                    
+                    //  GET FOREIGN KEY TO CHECKING FOR CONFIRMATION BEFORE ADDING OR DELETING IT
+                    var checkIfForeignKeyExist = await _repository.ProjectTaskRepository.GetByProjectIdAndTaskId(projectId, taskId, true);
+
+                    //  CREATE THE FOREIGN KEY OBJECT
+                    var projectUserTask = new ProjectUserTask
+                    {
+                        ProjectId = projectId,
+                        UserTaskId = taskId
+                    };
+
                     //  THIS CONDITION WILL CHECK IF WE NEED TO ADD OR DELETE THE TASK
                     if (operation == AddOrDelete.Add)
                     {
-                        //  CHECK IF THE TASK TO ADD ALREADY EXIST
-                        if (Util.IsListContainTask(getProjectTasks, checkIfTaskExistInUserTaskDb))
+                        if (checkIfForeignKeyExist == null)
+                        {
+                            //  THIS WILL CREATE A FOREIGN KEY TO LINK THE TASK TO THE PROJECT
+                            _repository.ProjectTaskRepository.CreateProjectTask(projectUserTask);
+                        }
+                        else
                         {
                             return new GenericResponse<ProjectResponse>
                             {
                                 IsSuccessful = false,
                                 ResponseCode = "400",
-                                ResponseMessage = "This task exist in your project already",
+                                ResponseMessage = "This task was assigned to this project already",
                             };
-                        }
-                        else
-                        {
-                            //  ADD THE NEW TASK TO THE ARRAY AND SAVE TO THE DB
-                            getProjectTasks.Add(checkIfTaskExistInUserTaskDb);
                         }
                     }
                     else if (operation == AddOrDelete.Delete)
                     {
-                        //  CHECK IF THE TASK TO ADD ALREADY EXIST
-                        if (Util.IsListContainTask(getProjectTasks, checkIfTaskExistInUserTaskDb))
+                        if (checkIfForeignKeyExist != null)
                         {
                             //  ADD THE NEW TASK TO THE ARRAY AND SAVE TO THE DB
-                            getProjectTasks.RemoveAll(x => x.TaskId == checkIfTaskExistInUserTaskDb.TaskId);
+                            _repository.ProjectTaskRepository.DeleteProjectTask(projectUserTask);
                         }
                         else
                         {
@@ -136,13 +141,12 @@ namespace TaskManager.Infrastructure.Services
                             {
                                 IsSuccessful = false,
                                 ResponseCode = "400",
-                                ResponseMessage = "This task does not exist in your project",
+                                ResponseMessage = "This task does not belong to this project",
                             };
                         }
                     }
 
-                    getProjectFromDb.UserTasks = getProjectTasks;
-                    _repository.ProjectRepository.UpdateProject(getProjectFromDb);
+                    //  SAVE INTO THE DATABASE
                     await _repository.SaveAsync();
 
                 }
@@ -190,7 +194,7 @@ namespace TaskManager.Infrastructure.Services
                 //  CHECK PROJECT OBJECT WHICH WE WILL SEND TO THE DATABASE BEFORE THE PROJECT MODEL IS OUR ENTITY
                 Project projectToSave = new Project
                 {
-                    ProjectId = Guid.NewGuid().ToString(),
+                    Id = Guid.NewGuid().ToString(),
                     Name = project.Name,
                     Description = project.Description,
                 };
@@ -239,7 +243,10 @@ namespace TaskManager.Infrastructure.Services
                         ResponseMessage = "Project not found",
                     };
 
+                //  DELETE FROM PROJECT DATABASE
                 _repository.ProjectRepository.DeleteProject(checkIfProjectExist);
+                //  DELETE FOREIGN KEY(S)
+                _repository.ProjectTaskRepository.DeleteProjectTaskByProjectId(projectId);
                 await _repository.SaveAsync();
 
                 return new GenericResponse<ProjectResponse>
@@ -275,7 +282,6 @@ namespace TaskManager.Infrastructure.Services
 
                 // THIS WILL GET ALL TASKS FROM THE REPOSITORY
                 var responseFromDb = await _repository.ProjectRepository.GetProjectByProjectId(projectId, false);
-
                 //  CHECK IF PROJECT EXIST
                 if (responseFromDb == null)
                     return new GenericResponse<ProjectDto>
@@ -285,12 +291,33 @@ namespace TaskManager.Infrastructure.Services
                         ResponseMessage = "Project not found",
                     };
 
-                //  FETCH ALL ASSIGNED TASKED BASED OF THE PRODUCT ID WHICH IS OUR FOREIGN KEY
-                var getAssignedTasks = await _repository.TaskRepository.GetTasksByProjectId(projectId, false);
-                
+                //  FETCH ALL ASSIGNED TASKS ID BASED ON THE PRODUCT ID WHICH IS OUR FOREIGN KEY
+                var getAssignedTasksIds = await _repository.ProjectTaskRepository.GetTaskIdsFromProjectId(projectId);
+                if (getAssignedTasksIds == null)
+                {
+                    return new GenericResponse<ProjectDto>
+                    {
+                        IsSuccessful = false,
+                        ResponseCode = "400",
+                        ResponseMessage = "No tasks are assigned to your project yet",
+                    };
+                }
+
+                //  FETCH ALL ASSIGNED TASKS ID BASED ON THE TASK IDS WE RECIEVED FROM THE ABOVE CODE (getAssignedTasksIds variable)
+                var assignedTasks = await _repository.TaskRepository.GetTasksByArrayOfTaskIds(getAssignedTasksIds.ToList(), false);
+                if(assignedTasks == null)
+                {
+                    return new GenericResponse<ProjectDto>
+                    {
+                        IsSuccessful = false,
+                        ResponseCode = "400",
+                        ResponseMessage = "No tasks are assigned to your project yet",
+                    };
+                }
+
                 //  MAP THE REQUIRED DATA WE NEED THE USERS TO SEE INTO A NEW DTO WHICH IS THE TASKDTO FOR THE RESPONSE
                 List<TaskDto> assignedTasksDto = new List<TaskDto>();
-                foreach (var task in getAssignedTasks)
+                foreach (var task in assignedTasks)
                 {
                     assignedTasksDto.Add(new TaskDto
                     {
@@ -302,7 +329,7 @@ namespace TaskManager.Infrastructure.Services
                     });
                 }
 
-                //  THIS IS THE R   ESPONSE DATA TO SEND BACK TO OUR CONSUMER
+                //  THIS IS THE RESPONSE DATA TO SEND BACK TO OUR CONSUMER
                 var response = new ProjectDto()
                 {
                     Name = responseFromDb.Name, 
@@ -314,7 +341,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
-                    ResponseMessage = "Successfully fetched project and the total tasks attached is: "+ getAssignedTasks.Count(),
+                    ResponseMessage = "Successfully fetched project and the total tasks attached is: "+ assignedTasksDto.Count(),
                     Data = response
                 };
             }

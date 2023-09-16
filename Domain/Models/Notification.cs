@@ -1,4 +1,4 @@
-﻿namespace Domain.Models
+﻿namespace TaskManager.Domain.Models
 {
     public class Notification
     {

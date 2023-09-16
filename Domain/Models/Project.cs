@@ -1,14 +1,14 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Domain.Models
+namespace TaskManager.Domain.Models
 {
     public class Project
     {
         [Key]
-        public string ProjectId { get; set; }
+        public string Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        public virtual ICollection<UserTask> UserTasks { get; set; }
+        public ICollection<UserTask> UserTasks { get; set; }
     }
 }
         

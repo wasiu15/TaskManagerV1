@@ -1,4 +1,4 @@
-﻿using Domain.Models;
+﻿using TaskManager.Domain.Models;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -49,7 +49,7 @@ namespace TaskManager.Infrastructure
         {
             foreach (var item in userTasks)
             {
-                if (item.TaskId == task.TaskId)
+                if (item.Id == task.Id)
                     return true;
             }
             return false;

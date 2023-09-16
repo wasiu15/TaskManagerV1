@@ -1,4 +1,4 @@
-﻿using Domain.Models;
+﻿using TaskManager.Domain.Models;
 using TaskManager.Domain.Dtos;
 
 namespace TaskManager.Application.Service.Interfaces

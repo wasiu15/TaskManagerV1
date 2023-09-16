@@ -1,5 +1,5 @@
 ﻿using Domain;
-using Domain.Models;
+using TaskManager.Domain.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using TaskManager.Application.Repository.Interfaces;
@@ -45,7 +45,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     response.Add(new TaskResponse()
                     {
-                        Id = task.TaskId.ToString(),
+                        Id = task.Id.ToString(),
                         Title = task.Title,
                         Description = task.Description,
                         DueDate = task.DueDate.ToString(),
@@ -62,6 +62,55 @@ namespace TaskManager.Infrastructure.Services
                     Data = response
                 };
             } 
+            catch (Exception ex)
+            {
+                return new GenericResponse<IEnumerable<TaskResponse>>
+                {
+                    IsSuccessful = false,
+                    ResponseCode = "500",
+                    ResponseMessage = "Error occured while fetching Tasks"
+                };
+            }
+        }
+        public async Task<GenericResponse<IEnumerable<TaskResponse>>> GetAllTasksByUserId()
+        {
+            try
+            {
+                var currentUserId = _httpContext.HttpContext?.GetSessionUser().UserId ?? "";
+                // THIS WILL GET ALL TASKS FROM THE REPOSITORY
+                var allTasks = await _repository.TaskRepository.GetTasksByUserId(currentUserId, false);
+
+                //  CHECK IF THE LIST IS EMPTY
+                if (allTasks == null)
+                    return new GenericResponse<IEnumerable<TaskResponse>>
+                    {
+                        IsSuccessful = false,
+                        ResponseCode = "400",
+                        ResponseMessage = "Tasks not found for this user",
+                    };
+
+                var response = new List<TaskResponse>();
+                foreach (var task in allTasks)
+                {
+                    response.Add(new TaskResponse()
+                    {
+                        Id = task.Id.ToString(),
+                        Title = task.Title,
+                        Description = task.Description,
+                        DueDate = task.DueDate.ToString(),
+                        Priority = task.Priority.ToString(),
+                        Status = task.Status.ToString()
+                    });
+                }
+
+                return new GenericResponse<IEnumerable<TaskResponse>>
+                {
+                    IsSuccessful = true,
+                    ResponseCode = "200",
+                    ResponseMessage = "Successfully fetched all tasks. Total number: " + allTasks.Count(),
+                    Data = response
+                };
+            }
             catch (Exception ex)
             {
                 return new GenericResponse<IEnumerable<TaskResponse>>
@@ -100,7 +149,7 @@ namespace TaskManager.Infrastructure.Services
 
                 var response = new TaskResponse()
                 {
-                    Id = responseFromDb.TaskId.ToString(),
+                    Id = responseFromDb.Id.ToString(),
                     Title = responseFromDb.Title,
                     Description = responseFromDb.Description,
                     DueDate = responseFromDb.DueDate.ToString(),
@@ -148,7 +197,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     response.Add(new TaskResponse()
                     {
-                        Id = task.TaskId.ToString(),
+                        Id = task.Id.ToString(),
                         Title = task.Title,
                         Description = task.Description,
                         DueDate = task.DueDate.ToString(),
@@ -212,7 +261,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     response.Add(new TaskResponse()
                     {
-                        Id = task.TaskId.ToString(),
+                        Id = task.Id.ToString(),
                         Title = task.Title,
                         Description = task.Description,
                         DueDate = task.DueDate.ToString(),
@@ -286,7 +335,6 @@ namespace TaskManager.Infrastructure.Services
                     };
                 }
 
-                var taskId = Guid.NewGuid().ToString();
                 //  GET CURRENT USER EMAIL AND NAME FROM THE HTTPCONTEXT CLASS
                 var currentUserEmail = _httpContext.HttpContext?.GetSessionUser().Email ?? "";
                 var currentUserName = _httpContext.HttpContext?.GetSessionUser().Name ?? "";
@@ -294,7 +342,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     email = currentUserEmail,
                     subject = "Message From Task Manager",
-                    message = "Hello " + currentUserName + ", \n You just created a new task with the ID: " + taskId + " at Time: " + DateTime.UtcNow.ToString()
+                    message = "Hello " + currentUserName + ", You just created a new task with the Title: " + task.Title + " at Time: " + DateTime.UtcNow.ToString()
                 };
 
                 //  GET THE MAILER URL... WHERE WE WOULD BE SENDING OUR POST REQUEST TO
@@ -309,7 +357,7 @@ namespace TaskManager.Infrastructure.Services
 
                 UserTask taskToSave = new UserTask
                 {
-                    TaskId = taskId,
+                    Id = Guid.NewGuid().ToString(),
                     Title = task.Title,
                     Description = task.Description,
                     DueDate = dueDateInDateFormat,
@@ -403,7 +451,7 @@ namespace TaskManager.Infrastructure.Services
                         {
                             email = currentUserEmail,
                             subject = "Message From Task Manager",
-                            message = "Hello " + currentUserName + ", \n The task with id: " + checkIfTaskExist.TaskId + " was just completed at Time: " + DateTime.UtcNow.ToString()
+                            message = "Hello " + currentUserName + ", The task with Title: " + checkIfTaskExist.Title + " was just completed at Time: " + DateTime.UtcNow.ToString()
                         };
                         
                         //  GET THE MAILER URL... WHERE WE WOULD BE SENDING OUR POST REQUEST TO
@@ -467,7 +515,10 @@ namespace TaskManager.Infrastructure.Services
                         ResponseMessage = "Task not found",
                     };
 
+                //  DELETE FROM TASK DATABASE
                 _repository.TaskRepository.DeleteTask(checkIfTaskExist);
+                //  DELETE FOREIGN KEY(S)
+                _repository.ProjectTaskRepository.DeleteProjectTaskByTaskId(taskId);
                 await _repository.SaveAsync();
 
                 return new GenericResponse<TaskResponse>
