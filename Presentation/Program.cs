@@ -20,7 +20,6 @@ builder.Services.AddHttpContextAccessor();
 
 
 builder.Services.AddControllers();
-//builder.Services.AddHostedService<BackgroundWorkerService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

@@ -1,4 +1,5 @@
 ﻿using TaskManager.Domain.Dtos;
+using TaskManager.Domain.Models;
 
 namespace TaskManager.Application.Service.Interfaces
 {
@@ -8,7 +9,7 @@ namespace TaskManager.Application.Service.Interfaces
         Task<GenericResponse<TaskResponse>> GetTaskByTaskId(string taskId);
         Task<GenericResponse<IEnumerable<TaskResponse>>> GetTasksDueThisWeek();
         Task<GenericResponse<IEnumerable<TaskResponse>>> GetTaskByPriorityOrStatus(StatusAndPriorityRequest request);
-        Task<GenericResponse<TaskResponse>> CreateTask(CreateTaskRequest task);
+        Task<GenericResponse<UserTask>> CreateTask(CreateTaskRequest task);
         Task<GenericResponse<TaskResponse>> UpdateTask(string taskIdString, StatusAndPriorityRequest request);
         Task<GenericResponse<TaskResponse>> DeleteTask(string taskId);
         Task<GenericResponse<IEnumerable<TaskResponse>>> GetAllTasksByUserId();

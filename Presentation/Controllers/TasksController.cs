@@ -27,7 +27,7 @@ namespace TaskManager.Presentation.Controllers
             return BadRequest(response);
         }
 
-        [HttpGet("getAllUserTasks")]
+        [HttpGet("getAllTasksForUser")]
         public async Task<ActionResult> GetAllUserTasks()
         {
             var response = await _serviceManager.TaskService.GetAllTasksByUserId();

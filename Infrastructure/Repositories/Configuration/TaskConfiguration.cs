@@ -17,6 +17,7 @@ namespace Infrastructure.Repositories.Configuration
                     Description = "Gym workout",
                     DueDate = new DateTime(2023, 11, 10),
                     Priority = Domain.Priority.Medium,
+                    UserId = Guid.NewGuid().ToString(),
                     Status = Domain.Status.Pending,
                 },
                 new UserTask
@@ -26,6 +27,7 @@ namespace Infrastructure.Repositories.Configuration
                     Description = "Research industry trends",
                     DueDate = new DateTime(2023, 10, 12),
                     Priority = Domain.Priority.Medium,
+                    UserId = Guid.NewGuid().ToString(),
                     Status = Domain.Status.In_progress,
                 }
             );
