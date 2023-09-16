@@ -15,7 +15,7 @@ namespace TaskManager.Infrastructure.Repositories
         public void CreateTask(UserTask task) => Create(task);
         public void UpdateTask(UserTask task) => Update(task);
         public void DeleteTask(UserTask task) => Delete(task);
-        public async Task<IEnumerable<UserTask>> GetTasksDueThisWeek(DateTime todayDate, DateTime lastDayOfCurrentWeek, bool trackChanges) => await FindByCondition(x => x.DueDate <= lastDayOfCurrentWeek && x.DueDate >= todayDate, trackChanges).ToListAsync();
+        public async Task<IEnumerable<UserTask>> GetTasksDueThisWeek(DateTime todayDate, DateTime lastDayOfCurrentWeek, bool trackChanges) => await FindByCondition(x => x.DueDate.Date <= lastDayOfCurrentWeek.Date && x.DueDate.Date >= todayDate.Date, trackChanges).ToListAsync();
         public async Task<UserTask> GetTaskByTaskId(string taskId, bool trackChanges) => await FindByCondition(x => x.Id.Equals(taskId), trackChanges).FirstOrDefaultAsync();
         public async Task<IEnumerable<UserTask>> GetTasks() => await FindAll(false).ToListAsync();
         public async Task<IEnumerable<UserTask>> GetTasksByStatusOrPriority(Status status, Priority priority, bool trackChanges) => await FindByCondition(x => x.Status.Equals(status) || x.Priority.Equals(priority), trackChanges).ToListAsync();
