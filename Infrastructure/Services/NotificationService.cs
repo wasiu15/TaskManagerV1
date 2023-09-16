@@ -76,11 +76,12 @@ namespace TaskManager.Infrastructure.Services
                 //  WE ARE NOT CHECKING IF IT WAS SUCCESSFUL OR NOT HERE BECAUSE EVEN IT THE EMAIL SERVER FAILS
                 //  THE TASK PROCESS SHOULD CONTINUE (BASE OF THIS APPLICATION REQUIREMENT WE DONT WANT TO MAKE THINGS TOO COMPLICATED)
 
-
+                var currentUserId = _httpContext.HttpContext?.GetSessionUser().UserId ?? "";
                 Notification notificationToSave = new Notification
                 {
                     NotificationId = Guid.NewGuid().ToString(),
                     TaskId = notification.TaskId,
+                    RecievedUserId = currentUserId,
                     Message = notification.Message,
                     Type = notification.Type == NotificationType.Due_date ? NotificationType.Due_date.ToString() : NotificationType.Status_update.ToString(),
                     ReadStatus = NotificationStatus.Unread.ToString(),

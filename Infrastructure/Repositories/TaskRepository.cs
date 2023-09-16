@@ -23,9 +23,14 @@ namespace TaskManager.Infrastructure.Repositories
         public async Task<IEnumerable<UserTask>> GetTasksByUserId(string userId, bool trackChanges) => await FindByCondition(x => x.UserId.Equals(userId), trackChanges).ToListAsync();
         public async Task<IEnumerable<UserTask>> GetAnyUnCompletedTaskToDueInTwoDays(bool trackChanges) => await FindByCondition(x => x.Status != Status.completed && Util.IsDateDue(x.DueDate), trackChanges).ToListAsync();
 
-        public async Task<IEnumerable<UserTask>> GetTasksByArrayOfTaskIds(List<string> taskId, bool trackChanges)
+        public async Task<IEnumerable<UserTask>> GetTasksByArrayOfTaskIds(List<string> taskIds, bool trackChanges)
         {
-            var data = await FindByCondition(x => x.Id.Equals(taskId), false).ToListAsync();
+            List<UserTask> data = new List<UserTask>();
+            foreach (var taskId in taskIds)
+            {
+                var taskObj = await FindByCondition(x => x.Id.Equals(taskId), false).FirstOrDefaultAsync();
+                data.Add(taskObj);
+            }
             return data;
         }
     }

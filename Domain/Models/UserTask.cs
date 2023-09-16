@@ -13,7 +13,7 @@ namespace TaskManager.Domain.Models
         public DateTime DueDate { get; set; }
         public Priority Priority { get; set; }
         public Status Status { get; set; }
-        public string? UserId { get; set; }
+        public string UserId { get; set; }
         public ICollection<Project> Projects { get; set; }
     }
 }

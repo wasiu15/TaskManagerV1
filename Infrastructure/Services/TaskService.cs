@@ -204,6 +204,8 @@ namespace TaskManager.Infrastructure.Services
                         Priority = task.Priority.ToString(),
                         Status = task.Status.ToString()
                     });
+
+
                 }
                 return new GenericResponse<IEnumerable<TaskResponse>>
                 {
@@ -256,6 +258,15 @@ namespace TaskManager.Infrastructure.Services
                         ResponseMessage = "Sorry, you enterred a wrong priority",
                     };
 
+                //  CHECK IF ANY OF THE INPUT IS NONE I.E (0)
+                if(request.TaskPriority == Priority.None || request.TaskStatus == Status.None)
+                    return new GenericResponse<IEnumerable<TaskResponse>>
+                    {
+                        IsSuccessful = false,
+                        ResponseCode = "400",
+                        ResponseMessage = "Kindly enter a valid input",
+                    };
+
                 var response = new List<TaskResponse>();
                 foreach (var task in responseFromDb)
                 {
@@ -288,7 +299,7 @@ namespace TaskManager.Infrastructure.Services
                 };
             }
         }
-        public async Task<GenericResponse<TaskResponse>> CreateTask(CreateTaskRequest task)
+        public async Task<GenericResponse<UserTask>> CreateTask(CreateTaskRequest task)
         {
             try
             {
@@ -297,7 +308,7 @@ namespace TaskManager.Infrastructure.Services
                 
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
                 if(string.IsNullOrEmpty(task.Title) || string.IsNullOrEmpty(task.Description) || string.IsNullOrEmpty(dueDateInStringFormat))
-                    return new GenericResponse<TaskResponse>
+                    return new GenericResponse<UserTask>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -306,7 +317,7 @@ namespace TaskManager.Infrastructure.Services
 
                 //  CHECK IF THE PRIORITY IS PART OF WHAT WE HAVE IN OUR ENUM.......... AND ENSURE USER CAN NOT SELECT NONE WHILE CREATING
                 if (!Enum.IsDefined(typeof(Priority), task.Priority) || Priority.None == task.Priority)
-                    return new GenericResponse<TaskResponse>
+                    return new GenericResponse<UserTask>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -316,7 +327,7 @@ namespace TaskManager.Infrastructure.Services
                 //  TRY TO CONVERT THE DATETIME
                 if (!DateTime.TryParse(dueDateInStringFormat, out dueDateInDateFormat))
                 {
-                    return new GenericResponse<TaskResponse>
+                    return new GenericResponse<UserTask>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -327,7 +338,7 @@ namespace TaskManager.Infrastructure.Services
                 //  PREVENT A USER FROM SELECTING A PAST DATE AS DUE DATE
                 if (dueDateInDateFormat < DateTime.UtcNow)
                 {
-                    return new GenericResponse<TaskResponse>
+                    return new GenericResponse<UserTask>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -354,6 +365,7 @@ namespace TaskManager.Infrastructure.Services
                 //  WE ARE NOT CHECKING IF IT WAS SUCCESSFUL OR NOT HERE BECAUSE EVEN IT THE EMAIL SERVER FAILS
                 //  THE TASK PROCESS SHOULD CONTINUE (BASE OF THIS APPLICATION REQUIREMENT WE DONT WANT TO MAKE THINGS TOO COMPLICATED)
 
+                var currentUserId = _httpContext.HttpContext?.GetSessionUser().UserId ?? "";
 
                 UserTask taskToSave = new UserTask
                 {
@@ -362,22 +374,24 @@ namespace TaskManager.Infrastructure.Services
                     Description = task.Description,
                     DueDate = dueDateInDateFormat,
                     Priority = task.Priority,
+                    UserId = currentUserId,
                     Status = Status.Pending,
                 };
                 _repository.TaskRepository.CreateTask(taskToSave);
                 await _repository.SaveAsync();
 
                 //  CHECK IF THE LIST IS EMPTY
-                return new GenericResponse<TaskResponse>
+                return new GenericResponse<UserTask>
                 {
                     IsSuccessful = true,
                     ResponseCode = "201",
                     ResponseMessage = "New task created successfully",
+                    Data = taskToSave
                 };
             }
             catch (Exception ex)
             {
-                return new GenericResponse<TaskResponse>
+                return new GenericResponse<UserTask>
                 {
                     IsSuccessful = false,
                     ResponseCode = "500",

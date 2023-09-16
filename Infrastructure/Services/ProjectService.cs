@@ -168,13 +168,13 @@ namespace TaskManager.Infrastructure.Services
             }
         }
 
-        public async Task<GenericResponse<ProjectResponse>> CreateProject(CreateProjectRequest project)
+        public async Task<GenericResponse<Project>> CreateProject(CreateProjectRequest project)
         {
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
                 if (string.IsNullOrEmpty(project.Name) || string.IsNullOrEmpty(project.Description))
-                    return new GenericResponse<ProjectResponse>
+                    return new GenericResponse<Project>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -184,7 +184,7 @@ namespace TaskManager.Infrastructure.Services
                 //  CHECK IF PROJECT ALREADY EXIST
                 var isProjectExist = await _repository.ProjectRepository.GetProjectByNameAndDescription(project.Name, project.Description, false);
                 if (isProjectExist != null)
-                    return new GenericResponse<ProjectResponse>
+                    return new GenericResponse<Project>
                     {
                         IsSuccessful = false,
                         ResponseCode = "400",
@@ -201,16 +201,17 @@ namespace TaskManager.Infrastructure.Services
                 _repository.ProjectRepository.CreateProject(projectToSave);
                 await _repository.SaveAsync();
 
-                return new GenericResponse<ProjectResponse>
+                return new GenericResponse<Project>
                 {
                     IsSuccessful = true,
                     ResponseCode = "201",
                     ResponseMessage = "You just successfully created a new project",
+                    Data = projectToSave
                 };
             }
             catch (Exception ex)
             {
-                return new GenericResponse<ProjectResponse>
+                return new GenericResponse<Project>
                 {
                     IsSuccessful = false,
                     ResponseCode = "500",
@@ -303,7 +304,7 @@ namespace TaskManager.Infrastructure.Services
                     };
                 }
 
-                //  FETCH ALL ASSIGNED TASKS ID BASED ON THE TASK IDS WE RECIEVED FROM THE ABOVE CODE (getAssignedTasksIds variable)
+                //  IF IT PREVIOUS CONDITION DOES NOT RETURN NULL THEN FETCH ALL ASSIGNED TASKS ID BASED ON THE TASK IDS WE RECIEVED FROM THE ABOVE CODE (getAssignedTasksIds variable)
                 var assignedTasks = await _repository.TaskRepository.GetTasksByArrayOfTaskIds(getAssignedTasksIds.ToList(), false);
                 if(assignedTasks == null)
                 {
