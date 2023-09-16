@@ -110,14 +110,5 @@ namespace TaskManager.Presentation.Controllers
                 return Ok(response);
             return BadRequest(response);
         }
-
-        [HttpPatch("assignTask")]
-        public async Task<ActionResult> AssignUser([FromQuery] string userId, [FromBody] AssignTaskRequest request)
-        {
-            var response = await _serviceManager.UserService.AssignTask(userId, request.Operation, request.TaskId);
-            if (response.IsSuccessful)
-                return Ok(response);
-            return BadRequest(response);
-        }
     }
 }

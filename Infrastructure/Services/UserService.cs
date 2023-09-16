@@ -3,6 +3,7 @@ using TaskManager.Domain.Models;
 using TaskManager.Application.Repository.Interfaces;
 using TaskManager.Application.Service.Interfaces;
 using TaskManager.Domain.Dtos;
+using System.Threading.Tasks;
 
 namespace TaskManager.Infrastructure.Services
 {
@@ -30,8 +31,17 @@ namespace TaskManager.Infrastructure.Services
                         ResponseMessage = "Please, enter all required fields",
                     };
 
+                //  CHECK IF THE NAME IS LETTER ONLY
+                if (!Util.IsInputLetterOnly(registerUser.Name))
+                    return new GenericResponse<Response>
+                    {
+                        IsSuccessful = false,
+                        ResponseCode = "400",
+                        ResponseMessage = "Please, enter letters only in the name field",
+                    };
+
                 //  CHECK IF EMAIL FORMAT IS CORRECT
-                if(!Util.EmailIsValid(registerUser.Email))
+                if (!Util.EmailIsValid(registerUser.Email))
                     return new GenericResponse<Response>
                     {
                         IsSuccessful = false,
@@ -40,7 +50,7 @@ namespace TaskManager.Infrastructure.Services
                     };
 
                 //  CHECK IF PASSWORD LENGTH IS ABOVE FOUR CHARS
-                if(registerUser.Password.Length < 5)
+                if(registerUser.Password.Length < 6)
                     return new GenericResponse<Response>
                     {
                         IsSuccessful = false,
