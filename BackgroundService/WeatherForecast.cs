@@ -1,4 +1,4 @@
-namespace Presentation
+namespace BackgroundService
 {
     public class WeatherForecast
     {
