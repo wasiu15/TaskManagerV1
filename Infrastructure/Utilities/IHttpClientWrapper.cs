@@ -2,6 +2,6 @@
 {
     public interface IHttpClientWrapper
     {
-        T SendPostEmailAsync<T>(string baseUrl, object body);
+        Task<T> SendPostEmailAsync<T>(string baseUrl, object body);
     }
 }

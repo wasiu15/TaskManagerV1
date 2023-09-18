@@ -25,7 +25,8 @@ namespace TaskManager.Presentation.Extensions
         //        .WithExposedHeaders("X-Pagination"));
         //  });
         public static void ConfigureDatabaseContext(this IServiceCollection services, IConfiguration configuration) =>
-            services.AddDbContext<RepositoryContext>(opts => opts.UseMySql(configuration.GetConnectionString("sqlConnection"), ServerVersion.AutoDetect(configuration.GetConnectionString("sqlConnection"))));
+            services.AddDbContext<RepositoryContext>(opts => opts.UseSqlite(configuration.GetConnectionString("sqlConnection")));
+        //services.AddDbContext<RepositoryContext>(opts => opts.UseMySql(configuration.GetConnectionString("sqlConnection"), ServerVersion.AutoDetect(configuration.GetConnectionString("sqlConnection"))));
 
         //  STAGE 2
         public static void ConfigureRepositoryManager(this IServiceCollection services) => services.AddScoped<IRepositoryManager, RepositoryManager>();

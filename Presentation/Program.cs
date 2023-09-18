@@ -1,3 +1,5 @@
+using Hangfire;
+using Hangfire.MySql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
@@ -9,7 +11,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.ConfigureDatabaseContext(builder.Configuration);
 builder.Services.ConfigureRepositoryManager();
 builder.Services.ConfigureServiceManager();
-//builder.Services.ConfigureServiceProvider();
 
 
 builder.Services.ConfigureHttpclient();
@@ -18,6 +19,25 @@ builder.Services.ConfigureAuthorization();
 builder.Services.ConfigureTokenManager();
 builder.Services.AddHttpContextAccessor();
 
+var hangfireConnectionString = builder.Configuration.GetConnectionString("HangfireConnection");
+builder.Services.AddHangfire(configuration => configuration
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseStorage(
+                new MySqlStorage(
+                    hangfireConnectionString,
+                    new MySqlStorageOptions
+                    {
+                        TablesPrefix = "Hangfire",
+                    }
+                )
+            ));
+
+// Add the processing server as IHostedService
+builder.Services.AddHangfireServer(options => options.WorkerCount = 1);
+
+//builder.Services.AddHangfireServer();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -44,7 +64,7 @@ builder.Services.AddSwaggerGen(options =>
         Type = SecuritySchemeType.Http,
         Scheme = "Bearer"
     });
-        options.AddSecurityRequirement(new OpenApiSecurityRequirement() {
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement() {
             {
                 new OpenApiSecurityScheme
                 {
@@ -63,9 +83,13 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
 app.UseSwagger();
 app.UseSwaggerUI();
 // Configure the HTTP request pipeline.
+
+app.UseHangfireDashboard();
+app.UseHangfireServer();
 
 app.UseHttpsRedirection();
 

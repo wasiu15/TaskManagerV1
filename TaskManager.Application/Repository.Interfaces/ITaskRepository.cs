@@ -14,7 +14,7 @@ namespace TaskManager.Application.Repository.Interfaces
         Task<IEnumerable<UserTask>> GetTasksByStatusOrPriority(Status status, Priority priority, bool trackChanges);
         //Task<IEnumerable<UserTask>> GetTasksByProjectId(string projectId, bool trackChanges);
         Task<IEnumerable<UserTask>> GetTasksByUserId(string userId, bool trackChanges);
-        Task<IEnumerable<UserTask>> GetAnyUnCompletedTaskToDueInTwoDays(bool trackChanges);
+        Task<IEnumerable<UserTask>> GetAnyUncompletedTaskToDueInTwoDaysWithNotificationStatusOffFalse(bool trackChanges);
         Task<IEnumerable<UserTask>> GetTasksByArrayOfTaskIds(List<string> taskId, bool trackChanges);
     }
 }

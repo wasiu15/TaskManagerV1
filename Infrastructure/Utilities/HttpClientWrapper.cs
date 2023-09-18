@@ -13,7 +13,8 @@ namespace TaskManager.Infrastructure.Utilities
             _configuration = configuration;
         }
 
-        public T SendPostEmailAsync<T>(string baseUrl, object body)
+
+        public async Task<T> SendPostEmailAsync<T>(string baseUrl, object body)
         {
             try
             {
@@ -23,17 +24,18 @@ namespace TaskManager.Infrastructure.Utilities
 
                     var json = JsonConvert.SerializeObject(body);
                     var content = new StringContent(json, Encoding.UTF8, "application/json");
-                    var _response = _httpClient.PostAsync(baseUrl, content).Result;
+                    var _response = await _httpClient.PostAsync(baseUrl, content); // Await this async call
+
                     if (_response.IsSuccessStatusCode)
                     {
-                        var _content1 = _response.Content.ReadAsStringAsync().Result;
-                        var Item = JsonConvert.DeserializeObject<T>(_content1);
-                        return Item;
+                        var _content1 = await _response.Content.ReadAsStringAsync(); // Await this async call
+                        var item = JsonConvert.DeserializeObject<T>(_content1);
+                        return item;
                     }
                     else
                     {
                         Console.WriteLine(_response);
-                        throw new Exception(_response.Content.ReadAsStringAsync().Result);
+                        throw new Exception(await _response.Content.ReadAsStringAsync()); // Await this async call
                     }
                 }
             }
@@ -42,6 +44,7 @@ namespace TaskManager.Infrastructure.Utilities
                 throw ex;
             }
         }
+
 
     }
 }

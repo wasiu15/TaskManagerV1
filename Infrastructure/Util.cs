@@ -5,11 +5,24 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using TaskManager.Domain.Dtos;
+using Microsoft.Extensions.Configuration;
+
 
 namespace TaskManager.Infrastructure
 {
     public static class Util
     {
+        private static readonly IConfiguration _configuration;
+
+        // Inject IConfiguration through a static constructor
+        static Util()
+        {
+            _configuration = new ConfigurationBuilder()
+                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                .AddJsonFile("appSettings.json", optional: true, reloadOnChange: true)
+                .Build();
+        }
+
         public static DateTime GetLastDayOfCurrentWeek()
         {
             var currentDay = DateTime.UtcNow.DayOfWeek.ToString();
@@ -57,7 +70,10 @@ namespace TaskManager.Infrastructure
 
         public static bool IsInputLetterOnly(string inputString)
         {
-            return inputString.All(c => Char.IsLetter(c));
+            var array = inputString.Split(' ');
+            string firstElem = array.First();
+            string removedSpace = string.Join(" ", array.Skip(1));
+            return removedSpace.All(c => Char.IsLetter(c));
         }
 
         public static bool EmailIsValid(string email)
@@ -120,18 +136,12 @@ namespace TaskManager.Infrastructure
         public static bool IsDateDue(DateTime startTime)
         {
             DateTime endTime = DateTime.UtcNow;
-            TimeSpan span = endTime.Subtract(startTime);
 
-            int totalHours = 0;
-            if (span.Days > 0)
-                totalHours = 24 * span.Days;
-            if (span.Hours > 0)
-                totalHours = totalHours + span.Hours;
+            int thresholdHours = _configuration.GetValue<int>("DueDateMaxHour", 48); // Read the DueDateMaxHour from appSettings.json or use a default value of 48
 
-            //  IT SHOULD ONLY SELECT 47 AND 48 HOURS... WE DON'T WANT TO MAKE THE RANGE TOO WIDE
-            if (totalHours >= 47 && totalHours < 49)
-                return true;
-            return false;
+            int totalHours = startTime.Subtract(endTime).Hours;
+
+            return totalHours < thresholdHours;
         }
     }
 }
