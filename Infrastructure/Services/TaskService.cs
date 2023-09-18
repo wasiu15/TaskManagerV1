@@ -6,6 +6,7 @@ using TaskManager.Application.Repository.Interfaces;
 using TaskManager.Application.Service.Interfaces;
 using TaskManager.Domain.Dtos;
 using TaskManager.Infrastructure.Utilities;
+using Hangfire;
 
 namespace TaskManager.Infrastructure.Services
 {
@@ -22,15 +23,19 @@ namespace TaskManager.Infrastructure.Services
             _httpContext = httpContext;
             _configuration = configuration;
             _httpClient = httpClient;
+
+            //  CALL THE SHEDULLER
+            //StartSchedulerJob();
         }
 
         public async Task<GenericResponse<IEnumerable<TaskResponse>>> GetAllTasks()
         {
             try
-            {                
+            {
+                SendReminderForDueTasks();
                 // THIS WILL GET ALL TASKS FROM THE REPOSITORY
                 var allTasks = await _repository.TaskRepository.GetTasks();
-                
+
                 //  CHECK IF THE LIST IS EMPTY
                 if (allTasks == null)
                     return new GenericResponse<IEnumerable<TaskResponse>>
@@ -53,15 +58,15 @@ namespace TaskManager.Infrastructure.Services
                         Status = task.Status.ToString()
                     });
                 }
-                
+
                 return new GenericResponse<IEnumerable<TaskResponse>>
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
-                    ResponseMessage = "Successfully fetched all tasks. Total number: "+allTasks.Count(),
+                    ResponseMessage = "Successfully fetched all tasks. Total number: " + allTasks.Count(),
                     Data = response
                 };
-            } 
+            }
             catch (Exception ex)
             {
                 return new GenericResponse<IEnumerable<TaskResponse>>
@@ -209,7 +214,7 @@ namespace TaskManager.Infrastructure.Services
                 {
                     IsSuccessful = true,
                     ResponseCode = "200",
-                    ResponseMessage = "Successfully fetched task",
+                    ResponseMessage = "Successfully fetched task total number is: " + response.Count(),
                     Data = response
                 };
             }
@@ -234,7 +239,7 @@ namespace TaskManager.Infrastructure.Services
                 if (responseFromDb == null)
                     return new GenericResponse<IEnumerable<TaskResponse>>
                     {
-                        IsSuccessful =false,
+                        IsSuccessful = false,
                         ResponseCode = "400",
                         ResponseMessage = "Tasks not found",
                     };
@@ -256,7 +261,7 @@ namespace TaskManager.Infrastructure.Services
                         ResponseMessage = "Sorry, you enterred a wrong priority",
                     };
 
-                
+
                 var response = new List<TaskResponse>();
                 foreach (var task in responseFromDb)
                 {
@@ -295,9 +300,9 @@ namespace TaskManager.Infrastructure.Services
             {
                 DateTime dueDateInDateFormat;
                 string dueDateInStringFormat = task.DueDate.ToString();
-                
+
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
-                if(string.IsNullOrEmpty(task.Title) || string.IsNullOrEmpty(task.Description) || string.IsNullOrEmpty(dueDateInStringFormat))
+                if (string.IsNullOrEmpty(task.Title) || string.IsNullOrEmpty(task.Description) || string.IsNullOrEmpty(dueDateInStringFormat))
                     return new GenericResponse<TaskResponse>
                     {
                         IsSuccessful = false,
@@ -346,14 +351,10 @@ namespace TaskManager.Infrastructure.Services
                     message = "Hello " + currentUserName + ", You just created a new task with the Title: " + task.Title + " at Time: " + DateTime.UtcNow.ToString()
                 };
 
-                //  GET THE MAILER URL... WHERE WE WOULD BE SENDING OUR POST REQUEST TO
-                var mailerUrl = $"{_configuration.GetSection("ExternalAPIs")["MailerUrl"]}";
+                //  CALL THE BACKGROUND WORKER
+                ScheduleTaskEmail(sendRequest);
+                //  CALLED THE BACKGROUND WORKER
 
-                //  THIS LINE SENDS THE REQUEST TO THE EMAIL SERVER
-                var sendEmailResponse = _httpClient.SendPostEmailAsync<string>(mailerUrl, sendRequest);
-
-                //  WE ARE NOT CHECKING IF IT WAS SUCCESSFUL OR NOT HERE BECAUSE EVEN IT THE EMAIL SERVER FAILS
-                //  THE TASK PROCESS SHOULD CONTINUE (BASE OF THIS APPLICATION REQUIREMENT WE DONT WANT TO MAKE THINGS TOO COMPLICATED)
 
                 var currentUserId = _httpContext.HttpContext?.GetSessionUser().UserId ?? "";
 
@@ -365,6 +366,7 @@ namespace TaskManager.Infrastructure.Services
                     Description = task.Description,
                     DueDate = dueDateInDateFormat,
                     Priority = task.Priority,
+                    IsReminderSent = false,
                     UserId = currentUserId,
                     Status = Status.Pending,
                 };
@@ -418,7 +420,7 @@ namespace TaskManager.Infrastructure.Services
             }
         }
         public async Task<GenericResponse<TaskResponse>> UpdateTask(string taskId, StatusAndPriorityRequest request)
-        {       
+        {
             try
             {
                 //  CHECK IF REQUIRED INPUTS ARE ENTERED
@@ -448,7 +450,7 @@ namespace TaskManager.Infrastructure.Services
                     };
 
                 var checkIfTaskExist = await _repository.TaskRepository.GetTaskByTaskId(taskId, true);
-                
+
                 //  CHECK IF THE TASK EXIST
                 if (checkIfTaskExist == null)
                     return new GenericResponse<TaskResponse>
@@ -485,15 +487,11 @@ namespace TaskManager.Infrastructure.Services
                             subject = "Message From Task Manager",
                             message = "Hello " + currentUserName + ", The task with Title: " + checkIfTaskExist.Title + " was just completed at Time: " + DateTime.UtcNow.ToString()
                         };
-                        
-                        //  GET THE MAILER URL... WHERE WE WOULD BE SENDING OUR POST REQUEST TO
-                        var mailerUrl = $"{_configuration.GetSection("ExternalAPIs")["MailerUrl"]}";
-                        
-                        //  THIS LINE SENDS THE REQUEST TO THE EMAIL SERVER
-                        var sendEmailResponse = _httpClient.SendPostEmailAsync<string>(mailerUrl, sendRequest);
 
-                        //  WE ARE NOT CHECKING IF IT WAS SUCCESSFUL OR NOT HERE BECAUSE EVEN IT THE EMAIL SERVER FAILS
-                        //  THE TASK PROCESS SHOULD CONTINUE (BASE OF THIS APPLICATION REQUIREMENT WE DONT WANT TO MAKE THINGS TOO COMPLICATED)
+                        //  CALL THE BACKGROUND WORKER
+                        ScheduleTaskEmail(sendRequest);
+                        //  CALLED THE BACKGROUND WORKER
+
 
                         var currentUserId = _httpContext.HttpContext?.GetSessionUser().UserId ?? "";
                         Notification notificationToSave = new Notification
@@ -547,10 +545,10 @@ namespace TaskManager.Infrastructure.Services
                         ResponseCode = "400",
                         ResponseMessage = "Please, enter the task Id",
                     };
-                
+
                 Guid taskIdGuid = new Guid(taskId);
                 var checkIfTaskExist = await _repository.TaskRepository.GetTaskByTaskId(taskId, true);
-                
+
                 //  CHECK IF THE TASK EXIST
                 if (checkIfTaskExist == null)
                     return new GenericResponse<TaskResponse>
@@ -568,7 +566,7 @@ namespace TaskManager.Infrastructure.Services
                     //  DELETE FOREIGN KEY(S) FIRST
                     _repository.ProjectTaskRepository.DeleteProjectUserTasks(listOfRelatedProjectUserTasks);
                 }
-                 
+
                 //  DELETE FROM TASK DATABASE
                 _repository.TaskRepository.DeleteTask(checkIfTaskExist);
                 await _repository.SaveAsync();
@@ -590,6 +588,87 @@ namespace TaskManager.Infrastructure.Services
                 };
             }
         }
+
+
+
+        // BACKGROUND JOB METHOD
+        public async Task ScheduleTaskEmail(EmailSenderRequestDto messageDetails)
+        {
+            // Schedule a background job to send the email
+            BackgroundJob.Enqueue(() => SendEmailAsync(messageDetails));
+        }
+
+        public async Task SendEmailAsync(EmailSenderRequestDto sendRequest)
+        {
+            string mailerUrl = _configuration.GetSection("ExternalAPIs")["MailerUrl"];
+
+            // Send the request to the email server
+            await _httpClient.SendPostEmailAsync<string>(mailerUrl, sendRequest);
+        }
+
+        public void StartSchedulerJob()
+        {
+            // Remove any existing job with the same name
+            RecurringJob.RemoveIfExists("dueDateJob");
+
+            // Trigger the job immediately and schedule it to run every 5 minutes
+            RecurringJob.AddOrUpdate("dueDateJob", () => SendReminderForDueTasks(), Cron.MinuteInterval(2));
+        }
+
+
+        //  METHOD TO FIND DUE TASKS
+        public async Task SendReminderForDueTasks()
+        {
+            try
+            {
+                var dueTasks = await _repository.TaskRepository.GetAnyUncompletedTaskToDueInTwoDaysWithNotificationStatusOffFalse(false);
+                if (dueTasks != null)
+                {
+                    foreach (var task in dueTasks)
+                    {
+                        var user = await _repository.UserRepository.GetByUserId(task.UserId, false);
+
+                        if (user != null)
+                        {
+                            var sendRequest = new EmailSenderRequestDto
+                            {
+                                email = user.Email,
+                                subject = "Due Date Reminder",
+                                message = $"Hello {user.Name}, Your task with the Title: {task.Title} now has less than 48 hours left to be completed as of {DateTime.UtcNow.ToString()}"
+                            };
+                            Console.WriteLine(sendRequest.email);
+
+                            // Send mail to the user
+                            SendEmailAsync(sendRequest);
+
+                            var createNotificationRequest = new Notification
+                            {
+                                NotificationId = Guid.NewGuid().ToString(),
+                                TaskId = task.Id.ToString(),
+                                RecievedUserId = task.UserId,
+                                Type = NotificationType.Due_date.ToString(),
+                                Message = sendRequest.message,
+                                ReadStatus = NotificationStatus.Unread.ToString(),
+                                Time = DateTime.UtcNow,
+                            };
+
+                            task.IsReminderSent = true;
+                            _repository.TaskRepository.UpdateTask(task);
+                            _repository.NotificationRepository.CreateNotification(createNotificationRequest);
+                        }
+                    }
+
+                    // Save changes to the repository
+                    await _repository.SaveAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+
 
     }
 }

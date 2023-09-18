@@ -12,6 +12,7 @@ namespace TaskManager.Domain.Models
         public string Description { get; set; }
         public DateTime DueDate { get; set; }
         public Priority Priority { get; set; }
+        public bool IsReminderSent { get; set; }
         public Status Status { get; set; }
         public string UserId { get; set; }
         public ICollection<Project> Projects { get; set; }
